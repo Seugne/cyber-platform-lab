@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.terraform/
+*.tfstate
+*.tfstate.*
+.env
+*.pem
+*.key
+*.crt
+secrets/
+credentials/
+.vscode/
+.idea/
+*.log
