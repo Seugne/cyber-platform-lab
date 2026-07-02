@@ -1,206 +1,243 @@
 # Cyber Platform Lab
 
-Cyber Platform Lab is a structured cybersecurity laboratory developed throughout my academic training to consolidate practical experience across several domains of modern cybersecurity.
+A technical cybersecurity laboratory bringing together practical projects covering Cloud Security, DevSecOps, Detection Engineering, Kubernetes Security and Secrets Management.
 
-Rather than presenting isolated demonstrations, this repository brings together complementary projects that collectively illustrate the lifecycle of securing an infrastructure: designing, deploying, protecting, monitoring and continuously improving production-like environments.
-
-Each laboratory focuses on a specific technical area while remaining part of the same engineering approach.
+This repository documents a coherent engineering approach for designing, securing, monitoring and continuously improving modern infrastructures.
 
 ---
 
-## Scope
+## About
 
-The repository currently covers five major areas frequently encountered in enterprise environments:
+The objective of this laboratory is to consolidate the technical skills developed throughout my cybersecurity curriculum by reproducing environments representative of those encountered in industry.
 
-- Cloud Infrastructure Security
-- DevSecOps
-- Kubernetes Security
-- Detection Engineering
-- Secrets Management
+Each module focuses on a specific domain while remaining part of a single security architecture.
 
-Every module has its own documentation, configuration files and implementation roadmap.
+The repository is organised to reflect a complete security lifecycle:
+
+- Secure infrastructure provisioning
+- Secure software delivery
+- Container and Kubernetes security
+- Detection engineering and monitoring
+- Secrets management
+
+Rather than presenting isolated demonstrations, the projects are designed to illustrate how these technologies complement one another within a modern cybersecurity environment.
 
 ---
 
-## Repository Layout
+# Repository Structure
 
-```
+''''
 Cyber Platform Lab
-
-01-terraform-aws
- 02-ci-security
+│
+ 01-terraform-aws
+02-ci-security
  03-k8s-hardening
- 04-detection-lab
+04-detection-lab
  05-vault-secrets
 
  docs
  screenshots
  scripts
+
+
+---
+
+# Technical Modules
+
+## CloudGuard
+
+Secure AWS infrastructure deployment using Terraform.
+
+Main topics:
+
+- Infrastructure as Code
+- AWS Networking
+- IAM Least Privilege
+- CloudTrail
+- Secure S3
+- Terraform
+- Checkov
+
+Repository
+
+```
+01-terraform-aws
 ```
 
 ---
 
-# Projects
+## SecurePipeline
 
-## 01 — CloudGuard
+Implementation of a secure CI/CD pipeline integrating automated security controls.
 
-Design and deployment of a secure AWS infrastructure using Terraform.
-
-The objective is to build a reproducible cloud environment following Infrastructure as Code principles while integrating security controls from the first deployment.
-
-Topics covered include:
-
-- Virtual Private Cloud design
-- IAM least privilege
-- Secure storage
-- CloudTrail logging
-- Infrastructure validation
-- Security compliance
-
----
-
-## 02 — SecurePipeline
-
-Implementation of a secure software delivery pipeline integrating automated security verification before deployment.
-
-The laboratory combines software development with security controls in order to demonstrate how vulnerabilities and configuration issues can be detected as early as possible.
-
-Topics include:
+Main topics:
 
 - GitHub Actions
-- Static analysis
-- Secret detection
-- Container image scanning
-- Dynamic application testing
-- Deployment validation
+- Docker
+- Semgrep
+- Trivy
+- OWASP ZAP
+- Gitleaks
+- DevSecOps
+
+Repository
+
+```
+02-ci-security
+```
 
 ---
 
-## 03 — K8sSec
+## K8sSec
 
-Hardening of Kubernetes environments using defensive security controls commonly deployed in production clusters.
+Hardening of a Kubernetes environment following security best practices.
 
-The project focuses on reducing the attack surface while enforcing secure operational practices.
+Main topics:
 
-Main subjects include:
-
+- Kubernetes
 - RBAC
-- Admission Control
-- Network Segmentation
-- Runtime Security
-- Security Policies
-- Cluster Hardening
+- Network Policies
+- OPA Gatekeeper
+- Falco
+- CIS Benchmark
+
+Repository
+
+```
+03-k8s-hardening
+```
 
 ---
 
-## 04 — SOCLab
+## SOCLab
 
-Detection Engineering laboratory dedicated to security monitoring and incident detection.
+Detection Engineering laboratory focused on monitoring and threat detection.
 
-The objective is to reproduce a simplified Security Operations Center capable of collecting logs, correlating events and identifying suspicious activity.
-
-Topics include:
+Main topics:
 
 - Elastic Stack
 - Wazuh
-- Detection Rules
-- Threat Hunting
-- Incident Analysis
-- MITRE ATT&CK mapping
+- Sigma Rules
+- MITRE ATT&CK
+- Detection Engineering
+- Incident Investigation
+
+Repository
+
+```
+04-detection-lab
+```
 
 ---
 
-## 05 — VaultOps
+## VaultOps
 
-Implementation of centralized secrets management using HashiCorp Vault.
+Implementation of secure secrets management using HashiCorp Vault.
 
-The laboratory demonstrates how sensitive credentials can be removed from source code and securely distributed to applications.
+Main topics
 
-Topics include:
-
-- Vault Policies
+- HashiCorp Vault
 - Dynamic Secrets
-- Authentication Methods
-- Secret Rotation
+- Zero Trust
+- Policy Management
 - CI/CD Integration
-- Zero Trust Principles
+
+Repository
+
+```
+05-vault-secrets
+```
 
 ---
 
-# Technology Stack
+# Technical Stack
 
-Infrastructure
+### Cloud
 
 - AWS
 - Terraform
 
-Containers
+### Containers
 
 - Docker
 - Kubernetes
 - Helm
 
-DevSecOps
+### DevSecOps
 
 - GitHub Actions
 - GitLab CI
 - Jenkins
 
-Application Security
+### Application Security
 
 - Semgrep
 - Trivy
 - OWASP ZAP
 - Gitleaks
 
-Detection
+### Detection
 
 - Elastic Stack
 - Wazuh
+- Sigma
 
-Operating Systems
+### Operating Systems
 
 - Linux
-- Windows
+- Windows Server
 
-Programming
+### Languages
 
 - Python
 - Bash
 
 ---
 
-# Repository Status
+# Current Status
 
-The laboratory is under continuous development.
+This repository is actively maintained.
 
-Each project progresses through the same engineering workflow:
+Each project is progressively documented with:
 
-- architecture design
+- architecture
 - implementation
-- validation
-- documentation
-- security review
-- operational testing
+- security decisions
+- validation steps
+- screenshots
+- technical notes
 
-As development progresses, each module is completed with implementation notes, validation evidence and supporting documentation.
-
----
-
-# Purpose
-
-The objective of this repository is to document the practical work carried out throughout my cybersecurity curriculum and to progressively build a coherent technical portfolio reflecting modern security engineering practices.
+The objective is to document each laboratory from design to operational validation.
 
 ---
 
-## Author
+# Learning Objectives
+
+This laboratory focuses on practical implementation of:
+
+- Cloud Security
+- DevSecOps
+- Infrastructure Security
+- Detection Engineering
+- Security Operations
+- Kubernetes Security
+- Secrets Management
+- Governance and Security Best Practices
+
+---
+
+# Author
 
 **Alain SEUGNE**
 
-GitHub  
+OSCP • Cloud Security • DevSecOps • Detection Engineering • Infrastructure Security
+
+GitHub
+
 https://github.com/Seugne
 
-LinkedIn  
+LinkedIn
+
 https://linkedin.com/in/alain-seugne# Laboratoire de cyber-plateforme
 
 Laboratoire technique académique orienté **Cloud Security**, **DevSecOps**, **Kubernetes Security**, **Detection Engineering**, **Security Operations** et **Secrets Management**.
@@ -241,7 +278,7 @@ Le dépôt suit une logique proche du cycle opérationnel attendu en cybersécur
 
 ## Correspondance avec les attendus SeCReTS / cybersécurité
 
-| Attendu technique | Modules concernés |
+ Attendu technique | Modules concernés |
 
  Sécurité des réseaux et infrastructures | 01-terraform-aws, 03-k8s-hardening |
  Systèmes Linux / Windows et administration sécurisée | 03-k8s-hardening, 04-detection-lab |
