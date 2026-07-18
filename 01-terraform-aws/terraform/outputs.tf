@@ -37,3 +37,24 @@ output "private_route_table_ids" {
   description = "IDs of the private route tables"
   value       = aws_route_table.private[*].id
 }
+
+output "security_group_ids" {
+  description = "CloudGuard Security Group identifiers"
+  value = {
+    alb           = aws_security_group.alb.id
+    app           = aws_security_group.app.id
+    rds           = aws_security_group.rds.id
+    admin         = aws_security_group.admin.id
+    vpc_endpoints = aws_security_group.vpc_endpoints.id
+  }
+}
+
+output "vpc_endpoint_ids" {
+  description = "CloudGuard VPC Endpoint identifiers"
+  value = {
+    s3          = aws_vpc_endpoint.s3.id
+    ssm         = aws_vpc_endpoint.ssm.id
+    ssmmessages = aws_vpc_endpoint.ssmmessages.id
+    ec2messages = aws_vpc_endpoint.ec2messages.id
+  }
+}
