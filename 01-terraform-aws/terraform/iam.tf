@@ -118,3 +118,39 @@ resource "aws_iam_role_policy_attachment" "admin_cloudwatch_agent" {
   role       = aws_iam_role.admin_ssm.name
   policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
 }
+
+# -----------------------------------------------------------------------------
+# Amazon RDS Enhanced Monitoring role
+#
+# This role is assumed by the RDS monitoring service, not by an EC2 instance.
+# It allows RDS to publish operating-system metrics to CloudWatch Logs.
+# -----------------------------------------------------------------------------
+
+data "aws_iam_policy_document" "rds_monitoring_assume_role" {
+  statement {
+    sid     = "AllowRDSMonitoringServiceToAssumeRole"
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["monitoring.rds.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "rds_monitoring" {
+  name               = "${local.project_name}-role-rds-monitoring"
+  description        = "Allows Amazon RDS Enhanced Monitoring to publish operating-system metrics"
+  assume_role_policy = data.aws_iam_policy_document.rds_monitoring_assume_role.json
+
+  tags = {
+    Name = "${local.project_name}-role-rds-monitoring"
+    Role = "database-monitoring"
+  }
+}
+
+resource "aws_iam_role_policy_attachment" "rds_enhanced_monitoring" {
+  role       = aws_iam_role.rds_monitoring.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonRDSEnhancedMonitoringRole"
+}
