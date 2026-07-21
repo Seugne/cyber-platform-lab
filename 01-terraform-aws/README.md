@@ -1,4 +1,10 @@
-# 01-terraform-aws
+## Architectur
+
+![CloudGuard AWS Architecture](architecture/images/architecture-overview.png)
+
+- [Open the full-resolution architecture](architecture/images/architecture-full.png)
+- [Download the PDF](architecture/cloudguard-architecture-v3.pdf)
+- [Edit the Draw.io source](architecture/cloudguard-architecture-v3.drawio)# 01-terraform-aws
 
 Module d'infrastructure cloud AWS sécurisée avec Terraform.
 
