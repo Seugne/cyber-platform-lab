@@ -154,3 +154,99 @@ resource "aws_iam_role_policy_attachment" "rds_enhanced_monitoring" {
   role       = aws_iam_role.rds_monitoring.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonRDSEnhancedMonitoringRole"
 }
+
+# -----------------------------------------------------------------------------
+# AWS Config recorder role
+# -----------------------------------------------------------------------------
+
+data "aws_iam_policy_document" "config_assume_role" {
+  statement {
+    sid     = "AllowConfigToAssumeRole"
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["config.amazonaws.com"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "AWS:SourceAccount"
+      values   = [data.aws_caller_identity.governance.account_id]
+    }
+
+    condition {
+      test     = "ArnLike"
+      variable = "AWS:SourceArn"
+      values = [
+        "arn:${data.aws_partition.governance.partition}:config:${data.aws_region.governance.region}:${data.aws_caller_identity.governance.account_id}:*"
+      ]
+    }
+  }
+}
+
+resource "aws_iam_role" "config" {
+  count = var.enable_aws_config ? 1 : 0
+
+  name               = "${local.project_name}-role-config-recorder"
+  description        = "Allows AWS Config to discover and record supported AWS resource configurations"
+  assume_role_policy = data.aws_iam_policy_document.config_assume_role.json
+
+  tags = {
+    Name = "${local.project_name}-role-config-recorder"
+    Role = "governance"
+  }
+}
+
+resource "aws_iam_role_policy_attachment" "config_managed" {
+  count = var.enable_aws_config ? 1 : 0
+
+  role       = aws_iam_role.config[0].name
+  policy_arn = "arn:${data.aws_partition.governance.partition}:iam::aws:policy/service-role/AWS_ConfigRole"
+}
+
+data "aws_iam_policy_document" "config_delivery" {
+  count = var.enable_aws_config ? 1 : 0
+
+  statement {
+    sid    = "AllowAuditBucketDiscovery"
+    effect = "Allow"
+
+    actions = [
+      "s3:GetBucketAcl",
+      "s3:ListBucket"
+    ]
+
+    resources = [
+      aws_s3_bucket.audit.arn
+    ]
+  }
+
+  statement {
+    sid    = "AllowConfigurationDelivery"
+    effect = "Allow"
+
+    actions = [
+      "s3:PutObject"
+    ]
+
+    resources = [
+      "${aws_s3_bucket.audit.arn}/config/AWSLogs/${data.aws_caller_identity.governance.account_id}/Config/*"
+    ]
+
+    condition {
+      test     = "StringEquals"
+      variable = "s3:x-amz-acl"
+      values   = ["bucket-owner-full-control"]
+    }
+  }
+}
+
+resource "aws_iam_role_policy" "config_delivery" {
+  count = var.enable_aws_config ? 1 : 0
+
+  name   = "${local.project_name}-config-delivery-policy"
+  role   = aws_iam_role.config[0].id
+  policy = data.aws_iam_policy_document.config_delivery[0].json
+}
