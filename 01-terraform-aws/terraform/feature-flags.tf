@@ -40,4 +40,3 @@ variable "enable_alb" {
     error_message = "The Application Load Balancer requires enable_compute = true."
   }
 }
-

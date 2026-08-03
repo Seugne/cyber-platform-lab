@@ -1,35 +1,36 @@
 # CloudGuard Environment Profiles
 
-CloudGuard uses one Terraform codebase with different environment profiles.
+CloudGuard uses one Terraform codebase with two deployment profiles.
 
 ## Laboratory
 
-Low-cost profile for validating the networking, IAM, encryption and governance foundations.
+The laboratory profile preserves the CloudGuard network, security, encryption,
+audit and PostgreSQL foundations while disabling selected hourly-cost services.
 
 ```bash
 terraform plan -var-file=environments/lab.tfvars
 ```
 
-Main hourly-cost resources are disabled.
+The laboratory profile disables:
 
-## Demonstration
+- NAT Gateway
+- EC2 compute layer
+- Application Load Balancer
+- SSM interface VPC endpoints
+- AWS Config
+- CloudTrail delivery to CloudWatch Logs
 
-Temporary profile for validating private EC2 instances and AWS Systems Manager connectivity.
-
-```bash
-terraform plan -var-file=environments/demo.tfvars
-```
-
-This profile enables EC2 and the SSM interface endpoints while leaving ALB and RDS disabled.
+RDS PostgreSQL remains a core CloudGuard component.
 
 ## Production
 
-Complete CloudGuard architecture.
+The production profile enables the complete CloudGuard architecture.
 
 ```bash
 terraform plan -var-file=environments/production.tfvars
 ```
 
-This profile enables NAT Gateway, interface endpoints, compute, ALB, RDS, AWS Config and CloudWatch integration.
+Production includes NAT Gateway, private EC2 instances, interface endpoints,
+Application Load Balancer, PostgreSQL RDS, AWS Config and CloudWatch integration.
 
-Always inspect the Terraform plan and estimated AWS costs before applying an environment profile.
+Always inspect the Terraform execution plan and estimated AWS costs before apply.
