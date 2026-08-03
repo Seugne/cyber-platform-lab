@@ -41,14 +41,3 @@ variable "enable_alb" {
   }
 }
 
-variable "enable_rds" {
-  description = "Whether to create the CloudGuard PostgreSQL RDS infrastructure"
-  type        = bool
-  default     = false
-  nullable    = false
-
-  validation {
-    condition     = !var.enable_rds || var.enable_compute
-    error_message = "RDS requires enable_compute = true because PostgreSQL access is restricted to the application tier."
-  }
-}

@@ -11,7 +11,6 @@ enable_nat_gateway         = false
 enable_interface_endpoints = true
 enable_compute             = true
 enable_alb                 = false
-enable_rds                 = false
 
 enable_aws_config                 = false
 enable_cloudtrail_cloudwatch_logs = true

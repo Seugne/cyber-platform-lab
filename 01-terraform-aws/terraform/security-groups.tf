@@ -87,7 +87,7 @@ resource "aws_vpc_security_group_ingress_rule" "app_from_alb" {
 }
 
 resource "aws_vpc_security_group_egress_rule" "app_to_rds" {
-  count = var.enable_compute && var.enable_rds ? 1 : 0
+  count = var.enable_compute ? 1 : 0
 
   security_group_id = aws_security_group.app[0].id
 
@@ -126,7 +126,7 @@ resource "aws_security_group" "rds" {
 }
 
 resource "aws_vpc_security_group_ingress_rule" "rds_from_app" {
-  count = var.enable_compute && var.enable_rds ? 1 : 0
+  count = var.enable_compute ? 1 : 0
 
   security_group_id = aws_security_group.rds.id
 
