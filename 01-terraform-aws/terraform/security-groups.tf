@@ -51,7 +51,7 @@ resource "aws_vpc_security_group_egress_rule" "alb_to_app" {
   security_group_id = aws_security_group.alb[0].id
 
   description                  = "Forward application traffic from ALB to EC2"
-  referenced_security_group_id = aws_security_group.app.id
+  referenced_security_group_id = aws_security_group.app[0].id
   from_port                    = local.application_port
   to_port                      = local.application_port
   ip_protocol                  = "tcp"
@@ -62,6 +62,8 @@ resource "aws_vpc_security_group_egress_rule" "alb_to_app" {
 # -----------------------------------------------------------------------------
 
 resource "aws_security_group" "app" {
+  count = var.enable_compute ? 1 : 0
+
   name        = "${local.project_name}-sg-app"
   description = "Controls traffic to and from the private application instance"
   vpc_id      = aws_vpc.cloudguard.id
@@ -75,7 +77,7 @@ resource "aws_security_group" "app" {
 resource "aws_vpc_security_group_ingress_rule" "app_from_alb" {
   count = var.enable_alb ? 1 : 0
 
-  security_group_id = aws_security_group.app.id
+  security_group_id = aws_security_group.app[0].id
 
   description                  = "Allow application traffic only from the ALB"
   referenced_security_group_id = aws_security_group.alb[0].id
@@ -85,7 +87,9 @@ resource "aws_vpc_security_group_ingress_rule" "app_from_alb" {
 }
 
 resource "aws_vpc_security_group_egress_rule" "app_to_rds" {
-  security_group_id = aws_security_group.app.id
+  count = var.enable_compute && var.enable_rds ? 1 : 0
+
+  security_group_id = aws_security_group.app[0].id
 
   description                  = "Allow PostgreSQL traffic from application to RDS"
   referenced_security_group_id = aws_security_group.rds.id
@@ -95,7 +99,9 @@ resource "aws_vpc_security_group_egress_rule" "app_to_rds" {
 }
 
 resource "aws_vpc_security_group_egress_rule" "app_https_outbound" {
-  security_group_id = aws_security_group.app.id
+  count = var.enable_compute ? 1 : 0
+
+  security_group_id = aws_security_group.app[0].id
 
   description = "Allow HTTPS access to AWS APIs and approved package repositories"
   cidr_ipv4   = "0.0.0.0/0"
@@ -120,10 +126,12 @@ resource "aws_security_group" "rds" {
 }
 
 resource "aws_vpc_security_group_ingress_rule" "rds_from_app" {
+  count = var.enable_compute && var.enable_rds ? 1 : 0
+
   security_group_id = aws_security_group.rds.id
 
   description                  = "Allow PostgreSQL only from the application tier"
-  referenced_security_group_id = aws_security_group.app.id
+  referenced_security_group_id = aws_security_group.app[0].id
   from_port                    = local.database_port
   to_port                      = local.database_port
   ip_protocol                  = "tcp"
@@ -137,6 +145,8 @@ resource "aws_vpc_security_group_ingress_rule" "rds_from_app" {
 # -----------------------------------------------------------------------------
 
 resource "aws_security_group" "admin" {
+  count = var.enable_compute ? 1 : 0
+
   name        = "${local.project_name}-sg-admin"
   description = "Controls the private SSM-managed administration instance"
   vpc_id      = aws_vpc.cloudguard.id
@@ -151,7 +161,9 @@ resource "aws_security_group" "admin" {
 # Session Manager connections are initiated outbound by the SSM Agent.
 
 resource "aws_vpc_security_group_egress_rule" "admin_https_outbound" {
-  security_group_id = aws_security_group.admin.id
+  count = var.enable_compute ? 1 : 0
+
+  security_group_id = aws_security_group.admin[0].id
 
   description = "Allow HTTPS access to Systems Manager and AWS APIs"
   cidr_ipv4   = "0.0.0.0/0"
@@ -165,7 +177,7 @@ resource "aws_vpc_security_group_egress_rule" "admin_https_outbound" {
 # -----------------------------------------------------------------------------
 
 resource "aws_security_group" "vpc_endpoints" {
-  count = var.enable_interface_endpoints ? 1 : 0
+  count = var.enable_compute && var.enable_interface_endpoints ? 1 : 0
 
   name        = "${local.project_name}-sg-vpc-endpoints"
   description = "Controls HTTPS access to CloudGuard interface VPC endpoints"
@@ -178,12 +190,12 @@ resource "aws_security_group" "vpc_endpoints" {
 }
 
 resource "aws_vpc_security_group_ingress_rule" "endpoints_from_app" {
-  count = var.enable_interface_endpoints ? 1 : 0
+  count = var.enable_compute && var.enable_interface_endpoints ? 1 : 0
 
   security_group_id = aws_security_group.vpc_endpoints[0].id
 
   description                  = "Allow HTTPS from the application instance"
-  referenced_security_group_id = aws_security_group.app.id
+  referenced_security_group_id = aws_security_group.app[0].id
   from_port                    = local.https_port
   to_port                      = local.https_port
   ip_protocol                  = "tcp"
@@ -195,7 +207,7 @@ resource "aws_vpc_security_group_ingress_rule" "endpoints_from_admin" {
   security_group_id = aws_security_group.vpc_endpoints[0].id
 
   description                  = "Allow HTTPS from the administration instance"
-  referenced_security_group_id = aws_security_group.admin.id
+  referenced_security_group_id = aws_security_group.admin[0].id
   from_port                    = local.https_port
   to_port                      = local.https_port
   ip_protocol                  = "tcp"

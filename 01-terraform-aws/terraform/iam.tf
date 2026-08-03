@@ -36,6 +36,8 @@ data "aws_iam_policy_document" "ec2_assume_role" {
 # -----------------------------------------------------------------------------
 
 resource "aws_iam_role" "app_ec2" {
+  count = var.enable_compute ? 1 : 0
+
   name               = "${local.project_name}-role-app-ec2"
   description        = "Least-privilege IAM role used by the CloudGuard application instance"
   assume_role_policy = data.aws_iam_policy_document.ec2_assume_role.json
@@ -47,8 +49,10 @@ resource "aws_iam_role" "app_ec2" {
 }
 
 resource "aws_iam_instance_profile" "app_ec2" {
+  count = var.enable_compute ? 1 : 0
+
   name = "${local.project_name}-instance-profile-app"
-  role = aws_iam_role.app_ec2.name
+  role = aws_iam_role.app_ec2[0].name
 
   tags = {
     Name = "${local.project_name}-instance-profile-app"
@@ -61,6 +65,8 @@ resource "aws_iam_instance_profile" "app_ec2" {
 # -----------------------------------------------------------------------------
 
 resource "aws_iam_role" "admin_ssm" {
+  count = var.enable_compute ? 1 : 0
+
   name               = "${local.project_name}-role-admin-ssm"
   description        = "Least-privilege IAM role used by the private SSM administration instance"
   assume_role_policy = data.aws_iam_policy_document.ec2_assume_role.json
@@ -72,8 +78,10 @@ resource "aws_iam_role" "admin_ssm" {
 }
 
 resource "aws_iam_instance_profile" "admin_ssm" {
+  count = var.enable_compute ? 1 : 0
+
   name = "${local.project_name}-instance-profile-admin"
-  role = aws_iam_role.admin_ssm.name
+  role = aws_iam_role.admin_ssm[0].name
 
   tags = {
     Name = "${local.project_name}-instance-profile-admin"
@@ -93,12 +101,16 @@ resource "aws_iam_instance_profile" "admin_ssm" {
 # -----------------------------------------------------------------------------
 
 resource "aws_iam_role_policy_attachment" "app_ssm_core" {
-  role       = aws_iam_role.app_ec2.name
+  count = var.enable_compute ? 1 : 0
+
+  role       = aws_iam_role.app_ec2[0].name
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
 resource "aws_iam_role_policy_attachment" "admin_ssm_core" {
-  role       = aws_iam_role.admin_ssm.name
+  count = var.enable_compute ? 1 : 0
+
+  role       = aws_iam_role.admin_ssm[0].name
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
@@ -110,12 +122,16 @@ resource "aws_iam_role_policy_attachment" "admin_ssm_core" {
 # -----------------------------------------------------------------------------
 
 resource "aws_iam_role_policy_attachment" "app_cloudwatch_agent" {
-  role       = aws_iam_role.app_ec2.name
+  count = var.enable_compute ? 1 : 0
+
+  role       = aws_iam_role.app_ec2[0].name
   policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
 }
 
 resource "aws_iam_role_policy_attachment" "admin_cloudwatch_agent" {
-  role       = aws_iam_role.admin_ssm.name
+  count = var.enable_compute ? 1 : 0
+
+  role       = aws_iam_role.admin_ssm[0].name
   policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
 }
 

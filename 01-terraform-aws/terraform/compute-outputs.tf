@@ -4,22 +4,22 @@
 
 output "app_ec2_role_arn" {
   description = "ARN of the CloudGuard application EC2 IAM role"
-  value       = aws_iam_role.app_ec2.arn
+  value       = var.enable_compute ? aws_iam_role.app_ec2[0].arn : null
 }
 
 output "admin_ssm_role_arn" {
   description = "ARN of the CloudGuard administration SSM IAM role"
-  value       = aws_iam_role.admin_ssm.arn
+  value       = var.enable_compute ? aws_iam_role.admin_ssm[0].arn : null
 }
 
 output "app_instance_profile_name" {
   description = "Name of the application EC2 instance profile"
-  value       = aws_iam_instance_profile.app_ec2.name
+  value       = var.enable_compute ? aws_iam_instance_profile.app_ec2[0].name : null
 }
 
 output "admin_instance_profile_name" {
   description = "Name of the administration EC2 instance profile"
-  value       = aws_iam_instance_profile.admin_ssm.name
+  value       = var.enable_compute ? aws_iam_instance_profile.admin_ssm[0].name : null
 }
 
 # -----------------------------------------------------------------------------
@@ -47,20 +47,20 @@ output "kms_alias_name" {
 
 output "app_instance_id" {
   description = "ID of the CloudGuard application EC2 instance"
-  value       = aws_instance.app.id
+  value       = var.enable_compute ? aws_instance.app[0].id : null
 }
 
 output "app_private_ip" {
   description = "Private IPv4 address of the CloudGuard application instance"
-  value       = aws_instance.app.private_ip
+  value       = var.enable_compute ? aws_instance.app[0].private_ip : null
 }
 
 output "admin_instance_id" {
   description = "ID of the CloudGuard administration EC2 instance"
-  value       = aws_instance.admin.id
+  value       = var.enable_compute ? aws_instance.admin[0].id : null
 }
 
 output "admin_private_ip" {
   description = "Private IPv4 address of the CloudGuard administration instance"
-  value       = aws_instance.admin.private_ip
+  value       = var.enable_compute ? aws_instance.admin[0].private_ip : null
 }

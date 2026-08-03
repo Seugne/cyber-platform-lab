@@ -111,6 +111,8 @@ locals {
 # -----------------------------------------------------------------------------
 
 resource "aws_instance" "app" {
+  count = var.enable_compute ? 1 : 0
+
   ami           = data.aws_ssm_parameter.amazon_linux_2023_ami.value
   instance_type = var.app_instance_type
 
@@ -118,10 +120,10 @@ resource "aws_instance" "app" {
   associate_public_ip_address = false
 
   vpc_security_group_ids = [
-    aws_security_group.app.id
+    aws_security_group.app[0].id
   ]
 
-  iam_instance_profile = aws_iam_instance_profile.app_ec2.name
+  iam_instance_profile = aws_iam_instance_profile.app_ec2[0].name
 
   monitoring = false
 
@@ -155,9 +157,7 @@ resource "aws_instance" "app" {
 
   depends_on = [
     aws_iam_role_policy_attachment.app_ssm_core,
-    aws_iam_role_policy_attachment.app_cloudwatch_agent,
-    aws_vpc_endpoint.ssm,
-    aws_vpc_endpoint.ssmmessages
+    aws_iam_role_policy_attachment.app_cloudwatch_agent
   ]
 }
 
@@ -169,6 +169,8 @@ resource "aws_instance" "app" {
 # -----------------------------------------------------------------------------
 
 resource "aws_instance" "admin" {
+  count = var.enable_compute ? 1 : 0
+
   ami           = data.aws_ssm_parameter.amazon_linux_2023_ami.value
   instance_type = var.admin_instance_type
 
@@ -176,10 +178,10 @@ resource "aws_instance" "admin" {
   associate_public_ip_address = false
 
   vpc_security_group_ids = [
-    aws_security_group.admin.id
+    aws_security_group.admin[0].id
   ]
 
-  iam_instance_profile = aws_iam_instance_profile.admin_ssm.name
+  iam_instance_profile = aws_iam_instance_profile.admin_ssm[0].name
 
   monitoring = false
 
@@ -210,8 +212,6 @@ resource "aws_instance" "admin" {
 
   depends_on = [
     aws_iam_role_policy_attachment.admin_ssm_core,
-    aws_iam_role_policy_attachment.admin_cloudwatch_agent,
-    aws_vpc_endpoint.ssm,
-    aws_vpc_endpoint.ssmmessages
+    aws_iam_role_policy_attachment.admin_cloudwatch_agent
   ]
 }

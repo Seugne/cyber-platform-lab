@@ -42,9 +42,9 @@ output "security_group_ids" {
   description = "CloudGuard Security Group identifiers"
   value = {
     alb           = var.enable_alb ? aws_security_group.alb[0].id : null
-    app           = aws_security_group.app.id
+    app           = var.enable_compute ? aws_security_group.app[0].id : null
     rds           = aws_security_group.rds.id
-    admin         = aws_security_group.admin.id
+    admin         = var.enable_compute ? aws_security_group.admin[0].id : null
     vpc_endpoints = var.enable_interface_endpoints ? aws_security_group.vpc_endpoints[0].id : null
   }
 }

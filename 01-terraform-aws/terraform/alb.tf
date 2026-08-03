@@ -74,7 +74,7 @@ resource "aws_lb_target_group_attachment" "application" {
   count = var.enable_alb ? 1 : 0
 
   target_group_arn = aws_lb_target_group.application[0].arn
-  target_id        = aws_instance.app.id
+  target_id        = aws_instance.app[0].id
   port             = local.application_port
 }
 
