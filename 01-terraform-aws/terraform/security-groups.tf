@@ -21,6 +21,8 @@ locals {
 # -----------------------------------------------------------------------------
 
 resource "aws_security_group" "alb" {
+  count = var.enable_alb ? 1 : 0
+
   name        = "${local.project_name}-sg-alb"
   description = "Controls inbound HTTPS access to the public ALB"
   vpc_id      = aws_vpc.cloudguard.id
@@ -32,7 +34,9 @@ resource "aws_security_group" "alb" {
 }
 
 resource "aws_vpc_security_group_ingress_rule" "alb_https_ipv4" {
-  security_group_id = aws_security_group.alb.id
+  count = var.enable_alb ? 1 : 0
+
+  security_group_id = aws_security_group.alb[0].id
 
   description = "Allow public HTTPS traffic to the ALB"
   cidr_ipv4   = "0.0.0.0/0"
@@ -42,7 +46,9 @@ resource "aws_vpc_security_group_ingress_rule" "alb_https_ipv4" {
 }
 
 resource "aws_vpc_security_group_egress_rule" "alb_to_app" {
-  security_group_id = aws_security_group.alb.id
+  count = var.enable_alb ? 1 : 0
+
+  security_group_id = aws_security_group.alb[0].id
 
   description                  = "Forward application traffic from ALB to EC2"
   referenced_security_group_id = aws_security_group.app.id
@@ -67,10 +73,12 @@ resource "aws_security_group" "app" {
 }
 
 resource "aws_vpc_security_group_ingress_rule" "app_from_alb" {
+  count = var.enable_alb ? 1 : 0
+
   security_group_id = aws_security_group.app.id
 
   description                  = "Allow application traffic only from the ALB"
-  referenced_security_group_id = aws_security_group.alb.id
+  referenced_security_group_id = aws_security_group.alb[0].id
   from_port                    = local.application_port
   to_port                      = local.application_port
   ip_protocol                  = "tcp"

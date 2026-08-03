@@ -4,22 +4,22 @@
 
 output "application_load_balancer_arn" {
   description = "ARN of the CloudGuard Application Load Balancer"
-  value       = aws_lb.application.arn
+  value       = var.enable_alb ? aws_lb.application[0].arn : null
 }
 
 output "application_load_balancer_dns_name" {
   description = "Public DNS name of the CloudGuard Application Load Balancer"
-  value       = aws_lb.application.dns_name
+  value       = var.enable_alb ? aws_lb.application[0].dns_name : null
 }
 
 output "application_target_group_arn" {
   description = "ARN of the CloudGuard application Target Group"
-  value       = aws_lb_target_group.application.arn
+  value       = var.enable_alb ? aws_lb_target_group.application[0].arn : null
 }
 
 output "https_listener_enabled" {
   description = "Whether the CloudGuard HTTPS listener is configured"
-  value       = var.acm_certificate_arn != null
+  value       = var.enable_alb && var.acm_certificate_arn != null
 }
 
 # -----------------------------------------------------------------------------

@@ -41,7 +41,7 @@ output "private_route_table_ids" {
 output "security_group_ids" {
   description = "CloudGuard Security Group identifiers"
   value = {
-    alb           = aws_security_group.alb.id
+    alb           = var.enable_alb ? aws_security_group.alb[0].id : null
     app           = aws_security_group.app.id
     rds           = aws_security_group.rds.id
     admin         = aws_security_group.admin.id

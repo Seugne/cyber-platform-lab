@@ -9,12 +9,14 @@
 # -----------------------------------------------------------------------------
 
 resource "aws_lb" "application" {
+  count = var.enable_alb ? 1 : 0
+
   name               = "${local.project_name}-alb"
   internal           = false
   load_balancer_type = "application"
 
   security_groups = [
-    aws_security_group.alb.id
+    aws_security_group.alb[0].id
   ]
 
   subnets = aws_subnet.public[*].id
@@ -36,6 +38,8 @@ resource "aws_lb" "application" {
 # -----------------------------------------------------------------------------
 
 resource "aws_lb_target_group" "application" {
+  count = var.enable_alb ? 1 : 0
+
   name        = "${local.project_name}-app-tg"
   port        = local.application_port
   protocol    = "HTTP"
@@ -67,7 +71,9 @@ resource "aws_lb_target_group" "application" {
 # -----------------------------------------------------------------------------
 
 resource "aws_lb_target_group_attachment" "application" {
-  target_group_arn = aws_lb_target_group.application.arn
+  count = var.enable_alb ? 1 : 0
+
+  target_group_arn = aws_lb_target_group.application[0].arn
   target_id        = aws_instance.app.id
   port             = local.application_port
 }
@@ -80,9 +86,9 @@ resource "aws_lb_target_group_attachment" "application" {
 # -----------------------------------------------------------------------------
 
 resource "aws_lb_listener" "https" {
-  count = var.acm_certificate_arn == null ? 0 : 1
+  count = var.enable_alb && var.acm_certificate_arn != null ? 1 : 0
 
-  load_balancer_arn = aws_lb.application.arn
+  load_balancer_arn = aws_lb.application[0].arn
   port              = local.https_port
   protocol          = "HTTPS"
   ssl_policy        = "ELBSecurityPolicy-TLS13-1-2-2021-06"
@@ -90,7 +96,7 @@ resource "aws_lb_listener" "https" {
 
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.application.arn
+    target_group_arn = aws_lb_target_group.application[0].arn
   }
 
   tags = {
