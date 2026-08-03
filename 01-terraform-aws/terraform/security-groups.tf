@@ -157,6 +157,8 @@ resource "aws_vpc_security_group_egress_rule" "admin_https_outbound" {
 # -----------------------------------------------------------------------------
 
 resource "aws_security_group" "vpc_endpoints" {
+  count = var.enable_interface_endpoints ? 1 : 0
+
   name        = "${local.project_name}-sg-vpc-endpoints"
   description = "Controls HTTPS access to CloudGuard interface VPC endpoints"
   vpc_id      = aws_vpc.cloudguard.id
@@ -168,7 +170,9 @@ resource "aws_security_group" "vpc_endpoints" {
 }
 
 resource "aws_vpc_security_group_ingress_rule" "endpoints_from_app" {
-  security_group_id = aws_security_group.vpc_endpoints.id
+  count = var.enable_interface_endpoints ? 1 : 0
+
+  security_group_id = aws_security_group.vpc_endpoints[0].id
 
   description                  = "Allow HTTPS from the application instance"
   referenced_security_group_id = aws_security_group.app.id
@@ -178,7 +182,9 @@ resource "aws_vpc_security_group_ingress_rule" "endpoints_from_app" {
 }
 
 resource "aws_vpc_security_group_ingress_rule" "endpoints_from_admin" {
-  security_group_id = aws_security_group.vpc_endpoints.id
+  count = var.enable_interface_endpoints ? 1 : 0
+
+  security_group_id = aws_security_group.vpc_endpoints[0].id
 
   description                  = "Allow HTTPS from the administration instance"
   referenced_security_group_id = aws_security_group.admin.id

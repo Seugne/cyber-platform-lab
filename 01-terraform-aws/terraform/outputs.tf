@@ -45,7 +45,7 @@ output "security_group_ids" {
     app           = aws_security_group.app.id
     rds           = aws_security_group.rds.id
     admin         = aws_security_group.admin.id
-    vpc_endpoints = aws_security_group.vpc_endpoints.id
+    vpc_endpoints = var.enable_interface_endpoints ? aws_security_group.vpc_endpoints[0].id : null
   }
 }
 
@@ -53,8 +53,8 @@ output "vpc_endpoint_ids" {
   description = "CloudGuard VPC Endpoint identifiers"
   value = {
     s3          = aws_vpc_endpoint.s3.id
-    ssm         = aws_vpc_endpoint.ssm.id
-    ssmmessages = aws_vpc_endpoint.ssmmessages.id
-    ec2messages = aws_vpc_endpoint.ec2messages.id
+    ssm         = var.enable_interface_endpoints ? aws_vpc_endpoint.ssm[0].id : null
+    ssmmessages = var.enable_interface_endpoints ? aws_vpc_endpoint.ssmmessages[0].id : null
+    ec2messages = var.enable_interface_endpoints ? aws_vpc_endpoint.ec2messages[0].id : null
   }
 }
