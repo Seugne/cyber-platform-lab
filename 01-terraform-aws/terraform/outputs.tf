@@ -25,7 +25,7 @@ output "internet_gateway_id" {
 
 output "nat_gateway_id" {
   description = "ID of the CloudGuard laboratory NAT Gateway"
-  value       = aws_nat_gateway.nat_a.id
+  value       = var.enable_nat_gateway ? aws_nat_gateway.nat_a[0].id : null
 }
 
 output "public_route_table_id" {
