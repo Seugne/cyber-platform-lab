@@ -2,24 +2,6 @@
 # Application Load Balancer and RDS variables
 # -----------------------------------------------------------------------------
 
-variable "acm_certificate_arn" {
-  description = "ARN of the ACM certificate used by the public HTTPS listener"
-  type        = string
-  default     = null
-  nullable    = true
-
-  validation {
-    condition = (
-      var.acm_certificate_arn == null ||
-      can(regex(
-        "^arn:aws:acm:eu-west-3:[0-9]{12}:certificate/[0-9a-fA-F-]+$",
-        var.acm_certificate_arn
-      ))
-    )
-    error_message = "The ACM certificate ARN must be a valid eu-west-3 ACM certificate ARN or null."
-  }
-}
-
 variable "database_name" {
   description = "Initial PostgreSQL database name"
   type        = string
