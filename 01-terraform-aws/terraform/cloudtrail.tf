@@ -17,6 +17,7 @@ resource "aws_cloudtrail" "management" {
   is_multi_region_trail         = true
   enable_log_file_validation    = true
   enable_logging                = true
+  kms_key_id                    = aws_kms_key.cloudguard.arn
 
   cloud_watch_logs_group_arn = (
     var.enable_cloudtrail_cloudwatch_logs

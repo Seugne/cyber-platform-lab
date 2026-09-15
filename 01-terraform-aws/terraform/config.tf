@@ -27,6 +27,7 @@ resource "aws_config_delivery_channel" "cloudguard" {
   name           = "${local.project_name}-delivery-channel"
   s3_bucket_name = aws_s3_bucket.audit.id
   s3_key_prefix  = "config"
+  s3_kms_key_arn = aws_kms_key.cloudguard.arn
 
   snapshot_delivery_properties {
     delivery_frequency = "TwentyFour_Hours"
