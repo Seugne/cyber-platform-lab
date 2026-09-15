@@ -1,0 +1,183 @@
+name: Infrastructure CI
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "01-terraform-aws/**"
+      - ".github/workflows/terraform-ci.yml"
+
+  push:
+    branches:
+      - main
+    paths:
+      - "01-terraform-aws/**"
+      - ".github/workflows/terraform-ci.yml"
+
+  workflow_dispatch:
+
+concurrency:
+  group: terraform-ci-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  TF_IN_AUTOMATION: "true"
+  AWS_REGION: eu-west-3
+  AWS_DEFAULT_REGION: eu-west-3
+  TF_DIR: 01-terraform-aws/terraform
+
+jobs:
+  static-checks:
+    name: Security & Terraform validation
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_wrapper: false
+
+      - name: Terraform formatting
+        run: terraform fmt -check -recursive 01-terraform-aws
+
+      - name: Terraform validation
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          directories=(
+            "01-terraform-aws/bootstrap/backend"
+            "01-terraform-aws/bootstrap/dns"
+            "01-terraform-aws/bootstrap/github-oidc"
+            "01-terraform-aws/terraform"
+          )
+
+          for dir in "${directories[@]}"; do
+            echo "::group::Validating ${dir}"
+
+            terraform -chdir="${dir}" init \
+              -backend=false \
+              -input=false
+
+            terraform -chdir="${dir}" validate \
+              -no-color
+
+            echo "::endgroup::"
+          done
+
+      - name: Gitleaks secret scan
+        uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Trivy Infrastructure as Code scan
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: config
+          scan-ref: 01-terraform-aws
+          format: table
+          hide-progress: true
+          severity: CRITICAL,HIGH
+          exit-code: "1"
+
+  terraform-plan:
+    name: AWS Terraform plans
+    runs-on: ubuntu-latest
+    needs:
+      - static-checks
+
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_wrapper: false
+
+      - name: Authenticate to AWS with GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: arn:aws:iam::982081065479:role/cloudguard-github-actions-plan
+          aws-region: eu-west-3
+          role-session-name: CloudGuardTerraformPlan
+          role-duration-seconds: 3600
+          mask-aws-account-id: true
+
+      - name: Verify AWS identity
+        run: aws sts get-caller-identity
+
+      - name: Terraform init with remote backend
+        run: |
+          terraform -chdir="${TF_DIR}" init \
+            -input=false
+
+      - name: Terraform plan - LAB
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          terraform -chdir="${TF_DIR}" plan \
+            -input=false \
+            -lock-timeout=5m \
+            -no-color \
+            -var-file=environments/lab.tfvars \
+            | tee /tmp/cloudguard-lab-plan.txt
+
+      - name: Terraform plan - PRODUCTION
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          terraform -chdir="${TF_DIR}" plan \
+            -input=false \
+            -lock-timeout=5m \
+            -no-color \
+            -var-file=environments/production.tfvars \
+            | tee /tmp/cloudguard-production-plan.txt
+
+      - name: Publish Terraform plan summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "## CloudGuard — Terraform Plan Summary"
+            echo
+
+            echo "### LAB"
+            echo '```text'
+            if [ -f /tmp/cloudguard-lab-plan.txt ]; then
+              grep -E '^Plan:|https_listener_enabled' \
+                /tmp/cloudguard-lab-plan.txt || true
+            else
+              echo "LAB plan unavailable"
+            fi
+            echo '```'
+
+            echo
+
+            echo "### PRODUCTION"
+            echo '```text'
+            if [ -f /tmp/cloudguard-production-plan.txt ]; then
+              grep -E '^Plan:|https_listener_enabled' \
+                /tmp/cloudguard-production-plan.txt || true
+            else
+              echo "Production plan unavailable"
+            fi
+            echo '```'
+          } >> "${GITHUB_STEP_SUMMARY}"
