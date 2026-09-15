@@ -1,0 +1,162 @@
+name: Application Security CI
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "02-ci-security/**"
+      - ".github/workflows/application-security-ci.yml"
+
+  push:
+    branches:
+      - main
+    paths:
+      - "02-ci-security/**"
+      - ".github/workflows/application-security-ci.yml"
+
+  workflow_dispatch:
+
+concurrency:
+  group: application-security-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  IMAGE_NAME: cloudguard-secure-pipeline
+  APP_DIR: 02-ci-security
+
+jobs:
+  application-security:
+    name: Application Security & Container Validation
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Validate Python syntax
+        run: |
+          python3 -m py_compile \
+            02-ci-security/app/app.py
+
+      - name: Gitleaks secret scan
+        uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Semgrep SAST
+        run: |
+          docker run --rm \
+            -v "${PWD}:/src" \
+            -w /src \
+            semgrep/semgrep:1.177.0 \
+            semgrep scan \
+              --config p/python \
+              --config p/security-audit \
+              --error \
+              02-ci-security/app
+
+      - name: Trivy filesystem and dependency scan
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: 02-ci-security
+          format: table
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: "1"
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t "${IMAGE_NAME}:${GITHUB_SHA}" \
+            "${APP_DIR}"
+
+      - name: Verify container runs as non-root
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          identity="$(
+            docker run --rm \
+              --entrypoint id \
+              "${IMAGE_NAME}:${GITHUB_SHA}"
+          )"
+
+          echo "${identity}"
+
+          echo "${identity}" | grep \
+            'uid=10001(cloudguard)'
+
+      - name: Start application container
+        run: |
+          docker run -d \
+            --rm \
+            --name cloudguard-ci \
+            -p 18080:8080 \
+            "${IMAGE_NAME}:${GITHUB_SHA}"
+
+      - name: Verify application health
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          for attempt in {1..20}; do
+            if curl -fsS \
+              http://127.0.0.1:18080/health \
+              > /tmp/cloudguard-health.json; then
+              break
+            fi
+
+            sleep 1
+          done
+
+          cat /tmp/cloudguard-health.json
+
+          grep -q '"status":"healthy"' \
+            /tmp/cloudguard-health.json
+
+      - name: Show application container logs
+        if: always()
+        run: |
+          docker logs cloudguard-ci \
+            --tail 50 || true
+
+      - name: Trivy container image scan
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: image
+          image-ref: cloudguard-secure-pipeline:${{ github.sha }}
+          format: table
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: "1"
+
+      - name: Stop application container
+        if: always()
+        run: |
+          docker stop cloudguard-ci || true
+
+      - name: Publish security summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "## CloudGuard — Application Security"
+            echo
+            echo "| Control | Purpose |"
+            echo "|---|---|"
+            echo "| Python validation | Syntax validation |"
+            echo "| Gitleaks | Secret detection |"
+            echo "| Semgrep | Static Application Security Testing |"
+            echo "| Trivy filesystem | Dependency vulnerability analysis |"
+            echo "| Docker build | Reproducible application artifact |"
+            echo "| Non-root validation | Container privilege reduction |"
+            echo "| Health check | Runtime validation |"
+            echo "| Trivy image | Container vulnerability analysis |"
+          } >> "${GITHUB_STEP_SUMMARY}"
