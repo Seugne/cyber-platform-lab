@@ -74,6 +74,8 @@ jobs:
       - name: Build Docker image
         run: |
           docker build \
+            --pull \
+            --provenance=false \
             -t "${IMAGE_NAME}:${GITHUB_SHA}" \
             "${APP_DIR}"
 
@@ -130,8 +132,10 @@ jobs:
       - name: Trivy container image scan
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
+          version: v0.74.0
           scan-type: image
           image-ref: cloudguard-secure-pipeline:${{ github.sha }}
+          scanners: vuln
           format: table
           severity: CRITICAL,HIGH
           ignore-unfixed: true
