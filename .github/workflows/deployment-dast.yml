@@ -2,6 +2,12 @@ name: Deployment & DAST
 
 on:
   workflow_dispatch:
+    inputs:
+      deploy:
+        description: "Deploy CloudGuard production infrastructure"
+        required: true
+        default: false
+        type: boolean
 
 concurrency:
   group: cloudguard-production-deployment
@@ -14,8 +20,8 @@ env:
   TF_DIR: 01-terraform-aws/terraform
 
 jobs:
-  production-preflight:
-    name: Production deployment preflight
+  production-deployment:
+    name: Production deployment
     runs-on: ubuntu-latest
 
     environment:
@@ -81,6 +87,7 @@ jobs:
             -lock-timeout=5m \
             -no-color \
             -var-file=environments/production.tfvars \
+            -out=production.tfplan \
             | tee /tmp/cloudguard-production-deployment-plan.txt
 
       - name: Verify safe production plan
@@ -98,12 +105,98 @@ jobs:
           grep -E '^Plan:' \
             /tmp/cloudguard-production-deployment-plan.txt
 
-      - name: Publish deployment preflight summary
+      - name: Terraform apply
+        if: ${{ inputs.deploy == true }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          terraform -chdir="${TF_DIR}" apply \
+            -input=false \
+            -auto-approve \
+            production.tfplan
+
+      - name: Wait for application target to become healthy
+        if: ${{ inputs.deploy == true }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          target_group_arn="$(
+            terraform -chdir="${TF_DIR}" output \
+              -raw application_target_group_arn
+          )"
+
+          echo "Target Group: ${target_group_arn}"
+
+          aws elbv2 wait target-in-service \
+            --target-group-arn "${target_group_arn}"
+
+      - name: Verify CloudGuard HTTPS health
+        if: ${{ inputs.deploy == true }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          target_url="https://app.cloudguardlab.fr"
+
+          for attempt in {1..30}; do
+            echo "HTTPS health attempt ${attempt}/30"
+
+            if curl -fsS \
+              "${target_url}/health" \
+              > /tmp/cloudguard-production-health.json; then
+              break
+            fi
+
+            sleep 10
+          done
+
+          cat /tmp/cloudguard-production-health.json
+
+          grep -Eq \
+            '"status"[[:space:]]*:[[:space:]]*"healthy"' \
+            /tmp/cloudguard-production-health.json
+
+      - name: Prepare ZAP report directory
+        if: ${{ inputs.deploy == true }}
+        run: |
+          mkdir -p zap-reports
+          chmod 777 zap-reports
+
+      - name: OWASP ZAP full DAST scan
+        if: ${{ inputs.deploy == true }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          docker run --rm \
+            -v "${PWD}/zap-reports:/zap/wrk/:rw" \
+            ghcr.io/zaproxy/zaproxy:stable \
+            zap-full-scan.py \
+              -t https://app.cloudguardlab.fr \
+              -m 1 \
+              -T 5 \
+              -I \
+              -r zap-report.html \
+              -J zap-report.json \
+              -w zap-report.md
+
+      - name: Upload ZAP DAST reports
+        if: ${{ inputs.deploy == true && always() }}
+        uses: actions/upload-artifact@043fb4609c828e0cccf5b7a7411e8e94b370c057 # v7.0.1
+        with:
+          name: cloudguard-zap-dast-report
+          path: zap-reports/
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Publish deployment summary
         if: always()
         shell: bash
         run: |
           {
-            echo "## CloudGuard — Production Deployment Preflight"
+            echo "## CloudGuard — Production Deployment"
             echo
             echo "| Control | Result |"
             echo "|---|---|"
@@ -111,7 +204,7 @@ jobs:
             echo "| Authentication | GitHub OIDC |"
             echo "| AWS role | cloudguard-github-actions-deploy |"
             echo "| Terraform backend | Remote S3 + KMS |"
-            echo "| Terraform apply | NOT EXECUTED |"
+            echo "| Deploy requested | ${{ inputs.deploy }} |"
             echo
             echo "### Terraform production plan"
             echo '```text'
@@ -124,4 +217,13 @@ jobs:
             fi
 
             echo '```'
+
+            if [ "${{ inputs.deploy }}" = "true" ]; then
+              echo
+              echo "### Runtime validation"
+              echo "| Control | Result |"
+              echo "|---|---|"
+              echo "| HTTPS endpoint | https://app.cloudguardlab.fr |"
+              echo "| DAST | OWASP ZAP Full Scan |"
+            fi
           } >> "${GITHUB_STEP_SUMMARY}"
