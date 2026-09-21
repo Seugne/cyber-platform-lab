@@ -15,3 +15,5 @@ enable_alb                 = true
 enable_aws_config                 = true
 enable_cloudtrail_cloudwatch_logs = true
 cloudtrail_log_retention_days     = 90
+
+database_backup_retention_days = 1
