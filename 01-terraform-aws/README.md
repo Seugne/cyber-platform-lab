@@ -11,7 +11,7 @@ Infrastructure CI
    ↓
 Application Security CI
    ↓
-Protected GitHub deployment
+GitHub production deployment
    ↓
 AWS production environment
    ↓
@@ -85,7 +85,7 @@ VPC Endpoints
 - No long-lived AWS access keys are stored in GitHub.
 - A dedicated **PLAN** role performs infrastructure planning.
 - A separate **DEPLOY** role is trusted from the GitHub `production` environment.
-- Production deployment is manually triggered and explicitly gated.
+- Production deployment is manually triggered with an explicit boolean deploy input and runs in the GitHub `production` environment.
 
 ### Network security
 
@@ -150,7 +150,7 @@ Workflow: [`.github/workflows/application-security-ci.yml`](../.github/workflows
 
 Workflow: [`.github/workflows/deployment-dast.yml`](../.github/workflows/deployment-dast.yml)
 
-The protected production workflow performs:
+The production workflow performs:
 
 1. GitHub OIDC authentication;
 2. Terraform initialization against the remote backend;
