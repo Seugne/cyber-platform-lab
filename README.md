@@ -65,7 +65,9 @@ It combines:
 
 ### Runtime proof
 
-![CloudGuard health endpoint](docs/evidence/cloudguard/09-health-endpoint.png)
+The public endpoint is served through an AWS Application Load Balancer and reaches a healthy private EC2 target.
+
+![CloudGuard target group health](docs/evidence/cloudguard/06-target-group-healthy.png)
 
 **Detailed technical case study:** [01-terraform-aws/README.md](01-terraform-aws/README.md)
 
