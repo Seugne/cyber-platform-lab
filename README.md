@@ -63,11 +63,9 @@ It combines:
 
 ![CloudGuard VPC resource map](docs/evidence/cloudguard/05-vpc-resource-map.png)
 
-### Runtime proof
+### Deployment evidence
 
-The public endpoint is served through an AWS Application Load Balancer and reaches a healthy private EC2 target.
-
-![CloudGuard target group health](docs/evidence/cloudguard/06-target-group-healthy.png)
+The production path is validated through live GitHub Actions workflows and the detailed CloudGuard case study. The root README keeps only the highest-signal architecture evidence so it stays fast to scan.
 
 **Detailed technical case study:** [01-terraform-aws/README.md](01-terraform-aws/README.md)
 
