@@ -1,5 +1,10 @@
 # CloudGuard — Secure AWS Production Platform
 
+[![Infrastructure CI](https://github.com/Seugne/cyber-platform-lab/actions/workflows/terraform-ci.yml/badge.svg?branch=main)](https://github.com/Seugne/cyber-platform-lab/actions/workflows/terraform-ci.yml)
+[![Application Security CI](https://github.com/Seugne/cyber-platform-lab/actions/workflows/application-security-ci.yml/badge.svg?branch=main)](https://github.com/Seugne/cyber-platform-lab/actions/workflows/application-security-ci.yml)
+[![Deployment & DAST](https://github.com/Seugne/cyber-platform-lab/actions/workflows/deployment-dast.yml/badge.svg?branch=main)](https://github.com/Seugne/cyber-platform-lab/actions/workflows/deployment-dast.yml)
+
+
 CloudGuard is a production-oriented AWS security case study built with **Terraform**, **GitHub Actions** and layered DevSecOps controls.
 
 It demonstrates the complete path from infrastructure design to production validation:
@@ -19,6 +24,20 @@ HTTPS runtime validation
    ↓
 OWASP ZAP DAST
 ```
+
+## Recruiter / engineering quick scan
+
+| Question | Answer |
+|---|---|
+| What is it? | Secure AWS production platform built and validated end-to-end |
+| How is it provisioned? | Terraform |
+| How does CI authenticate to AWS? | GitHub OIDC — no long-lived AWS keys |
+| Where are workloads? | Private EC2 subnets; public ingress only through ALB |
+| How is the database exposed? | It is not public; PostgreSQL RDS stays private |
+| How is delivery controlled? | Separate PLAN/DEPLOY roles + manual production input |
+| What security gates run? | Gitleaks, Trivy IaC/FS/Image, Semgrep, non-root check, health check |
+| What happens after deploy? | HTTPS verification, target health validation, OWASP ZAP DAST |
+| DAST result | **136 PASS / 5 WARN / 0 FAIL** |
 
 ## Executive summary
 
@@ -168,13 +187,22 @@ The production workflow performs:
 The deployed path is:
 
 ```text
-HTTPS :443
-→ cloudguard-alb
-→ cloudguard-app-tg
-→ private application EC2 :8080
+Internet
+  ↓
+Route 53 / ACM
+  ↓
+ALB — HTTPS :443
+  ↓
+cloudguard-app-tg
+  ↓
+private application EC2 :8080
+  ↓
+private PostgreSQL RDS :5432
 ```
 
-AWS reported the registered target as healthy before the pipeline continued to DAST.
+### ALB target health
+
+The deployment workflow waits for the registered application target to reach AWS ELB **in-service / healthy** state before continuing to HTTPS validation and DAST. The successful production run is directly verifiable in the live workflow history.
 
 ### Private database
 
@@ -190,11 +218,21 @@ PostgreSQL RDS is deployed with:
 
 ### Application health
 
-![Application health endpoint](../docs/evidence/cloudguard/09-health-endpoint.png)
-
-The public HTTPS endpoint reaches the private application instance successfully.
+The public HTTPS endpoint reaches the private application instance successfully. A retained runtime screenshot is available in the [engineering evidence directory](../docs/evidence/cloudguard/), while the workflow itself performs the same health check before DAST.
 
 ---
+
+## Evidence strategy
+
+The repository keeps the README focused on high-signal evidence rather than duplicating every console screen. CI/CD proof is linked through the live GitHub Actions workflows and badges; AWS screenshots are used where they prove runtime state that the source code alone cannot show.
+
+| Evidence | What it proves |
+|---|---|
+| VPC resource map | public/private segmentation, routing, IGW, NAT and S3 endpoint |
+| Target Group health | ALB can reach the private application on port 8080 |
+| HTTPS health endpoint | end-to-end public HTTPS → ALB → private EC2 path |
+| GitHub Actions workflows | repeatable IaC, AppSec and production/DAST automation |
+| ZAP workflow artifact | retained dynamic-security output |
 
 ## DAST evidence
 
