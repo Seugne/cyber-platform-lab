@@ -1,5 +1,11 @@
 # CloudGuard — Secure AWS Production Platform
 
+<p align="center">
+  <a href="architecture/images/architecture-full.png">
+    <img src="architecture/images/architecture-overview.png" alt="CloudGuard AWS architecture" width="100%">
+  </a>
+</p>
+
 CloudGuard is a production-oriented AWS security case study built with **Terraform**, **GitHub Actions** and layered DevSecOps controls.
 
 It demonstrates the complete path from infrastructure design to production validation:
@@ -74,8 +80,6 @@ OWASP ZAP DAST
 
 ## Architecture
 
-![CloudGuard architecture](architecture/images/architecture-overview.png)
-
 - [Open full-resolution architecture](architecture/images/architecture-full.png)
 - [Architecture PDF](architecture/cloudguard-architecture-v3.pdf)
 - [Draw.io source](architecture/cloudguard-architecture-v3.drawio)
@@ -83,8 +87,8 @@ OWASP ZAP DAST
 ### Deployed VPC
 
 <p align="center">
-  <a href="../docs/evidence/cloudguard/05-vpc-resource-map.png">
-    <img src="../docs/evidence/cloudguard/05-vpc-resource-map.png" alt="CloudGuard deployed AWS VPC resource map" width="100%">
+  <a href="../screenshots/05-vpc-resource-map.png">
+    <img src="../screenshots/05-vpc-resource-map.png" alt="CloudGuard deployed AWS VPC resource map" width="100%">
   </a>
 </p>
 
@@ -216,16 +220,16 @@ AWS reported the registered target as healthy before the pipeline continued to D
 ### Load balancer and target health
 
 <p align="center">
-  <a href="../docs/evidence/cloudguard/07-alb-https.png">
-    <img src="../docs/evidence/cloudguard/07-alb-https.png" alt="CloudGuard ALB HTTPS listener" width="100%">
+  <a href="../screenshots/07-alb-https.png">
+    <img src="../screenshots/07-alb-https.png" alt="CloudGuard ALB HTTPS listener" width="100%">
   </a>
 </p>
 
 The internet-facing ALB terminates **HTTPS :443** and forwards requests to `cloudguard-app-tg`.
 
 <p align="center">
-  <a href="../docs/evidence/cloudguard/06-target-group-healthy.png">
-    <img src="../docs/evidence/cloudguard/06-target-group-healthy.png" alt="CloudGuard target group healthy EC2 target" width="100%">
+  <a href="../screenshots/06-target-group-healthy.png">
+    <img src="../screenshots/06-target-group-healthy.png" alt="CloudGuard target group healthy EC2 target" width="100%">
   </a>
 </p>
 
@@ -246,8 +250,8 @@ PostgreSQL RDS is deployed with:
 ### Application health
 
 <p align="center">
-  <a href="../docs/evidence/cloudguard/09-health-endpoint.png">
-    <img src="../docs/evidence/cloudguard/09-health-endpoint.png" alt="CloudGuard HTTPS health endpoint" width="100%">
+  <a href="../screenshots/09-health-endpoint.png">
+    <img src="../screenshots/09-health-endpoint.png" alt="CloudGuard HTTPS health endpoint" width="100%">
   </a>
 </p>
 
