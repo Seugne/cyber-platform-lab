@@ -202,9 +202,7 @@ private PostgreSQL RDS :5432
 
 ### ALB target health
 
-![CloudGuard target group health](../docs/evidence/cloudguard/06-target-group-healthy.png)
-
-AWS reports **1 healthy / 0 unhealthy** registered application targets before the pipeline continues to HTTPS validation and DAST.
+The deployment workflow waits for the registered application target to reach AWS ELB **in-service / healthy** state before continuing to HTTPS validation and DAST. The successful production run is directly verifiable in the live workflow history.
 
 ### Private database
 
@@ -220,9 +218,7 @@ PostgreSQL RDS is deployed with:
 
 ### Application health
 
-![Application health endpoint](../docs/evidence/cloudguard/09-health-endpoint.png)
-
-The public HTTPS endpoint reaches the private application instance successfully. The returned internal EC2 hostname is also useful evidence that the public request terminates at the ALB and is forwarded to a private workload.
+The public HTTPS endpoint reaches the private application instance successfully. A retained runtime screenshot is available in the [engineering evidence directory](../docs/evidence/cloudguard/), while the workflow itself performs the same health check before DAST.
 
 ---
 
