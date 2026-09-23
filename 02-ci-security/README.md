@@ -39,7 +39,7 @@ The deployment workflow is:
 
 [`.github/workflows/deployment-dast.yml`](../.github/workflows/deployment-dast.yml)
 
-and is protected by the GitHub `production` environment and AWS OIDC federation.
+and runs in the GitHub `production` environment using AWS OIDC federation and an explicit manual deploy input.
 
 ## Application runtime
 
