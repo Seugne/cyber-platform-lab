@@ -41,11 +41,16 @@ It combines:
 
 ### Evidence at a glance
 
-| Infrastructure CI | Deployed AWS network | Production deployment |
-|---|---|---|
-| [![Infrastructure CI](docs/evidence/cloudguard/01-infrastructure-ci.png)](docs/evidence/cloudguard/01-infrastructure-ci.png) | [![VPC resource map](docs/evidence/cloudguard/05-vpc-resource-map.png)](docs/evidence/cloudguard/05-vpc-resource-map.png) | [![Deployment & DAST](docs/evidence/cloudguard/03-deployment-dast.png)](docs/evidence/cloudguard/03-deployment-dast.png) |
+<p align="center">
+  <a href="docs/evidence/cloudguard/05-vpc-resource-map.png">
+    <img src="docs/evidence/cloudguard/05-vpc-resource-map.png" alt="CloudGuard deployed VPC" width="49%">
+  </a>
+  <a href="docs/evidence/cloudguard/09-health-endpoint.png">
+    <img src="docs/evidence/cloudguard/09-health-endpoint.png" alt="CloudGuard HTTPS health endpoint" width="49%">
+  </a>
+</p>
 
-The screenshots are supporting evidence only. Every major claim is reviewable in Terraform, GitHub Actions and application code.
+The screenshots are supporting evidence only. The implementation is reviewable in Terraform, GitHub Actions and application code.
 
 **→ [Open the full CloudGuard technical case study](01-terraform-aws/README.md)**
 
