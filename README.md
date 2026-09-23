@@ -39,15 +39,20 @@ It combines:
 | DAST | OWASP ZAP Full Scan |
 | ZAP result | **136 PASS / 5 WARN / 0 FAIL** |
 
-### Deployed network
+### Evidence at a glance
 
-![CloudGuard VPC resource map](docs/evidence/cloudguard/05-vpc-resource-map.png)
+<p align="center">
+  <a href="docs/evidence/cloudguard/05-vpc-resource-map.png">
+    <img src="docs/evidence/cloudguard/05-vpc-resource-map.png" alt="CloudGuard deployed VPC" width="49%">
+  </a>
+  <a href="docs/evidence/cloudguard/09-health-endpoint.png">
+    <img src="docs/evidence/cloudguard/09-health-endpoint.png" alt="CloudGuard HTTPS health endpoint" width="49%">
+  </a>
+</p>
 
-### Runtime proof
+The screenshots are supporting evidence only. The implementation is reviewable in Terraform, GitHub Actions and application code.
 
-![CloudGuard health endpoint](docs/evidence/cloudguard/09-health-endpoint.png)
-
-**Detailed technical case study:** [01-terraform-aws/README.md](01-terraform-aws/README.md)
+**→ [Open the full CloudGuard technical case study](01-terraform-aws/README.md)**
 
 ---
 
@@ -110,6 +115,16 @@ Security checks are treated as deployment controls rather than documentation-onl
 - **Remote Terraform state:** S3 + KMS + locking are kept outside the disposable application stack.
 - **Security gates before and after deployment:** static controls run before delivery; the deployment workflow rejects unexpected Terraform changes/destructions; ZAP validates the live HTTPS endpoint afterward.
 - **Evidence-driven validation:** CI summaries, AWS state and security scan artifacts are retained as implementation evidence.
+
+---
+
+## Reviewer path
+
+A recruiter or engineer can review this repository in three passes:
+
+1. **30 seconds:** read the featured case study and validated controls;
+2. **2–3 minutes:** open the CloudGuard case study and deployment evidence;
+3. **deep dive:** inspect Terraform, GitHub Actions and application/container code.
 
 ---
 

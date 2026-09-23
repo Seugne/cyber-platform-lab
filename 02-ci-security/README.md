@@ -50,6 +50,8 @@ and runs in the GitHub `production` environment using AWS OIDC federation and an
 
 ## Security evidence
 
+This pipeline is the pre-deployment application-security gate. The production workflow then validates the live service dynamically.
+
 The production DAST stage completed with:
 
 ```text
@@ -61,3 +63,10 @@ FAIL-NEW: 0
 See the complete CloudGuard engineering case study:
 
 **[CloudGuard — Secure AWS Production Platform](../01-terraform-aws/README.md)**
+
+
+---
+
+## Reviewer takeaway
+
+This module demonstrates that application security is enforced as pipeline behavior, not described only in documentation: source, secrets, dependencies, container privileges, image vulnerabilities and runtime health are all checked before the production DAST stage.
