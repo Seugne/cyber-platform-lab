@@ -1,180 +1,292 @@
-## Architectur
+# CloudGuard — Secure AWS Production Platform
 
-![CloudGuard AWS Architecture](architecture/images/architecture-overview.png)
+CloudGuard is a production-oriented AWS security case study built with **Terraform**, **GitHub Actions** and layered DevSecOps controls.
 
-- [Open the full-resolution architecture](architecture/images/architecture-full.png)
-- [Download the PDF](architecture/cloudguard-architecture-v3.pdf)
-- [Edit the Draw.io source](architecture/cloudguard-architecture-v3.drawio)# 01-terraform-aws
+It demonstrates the complete path from infrastructure design to production validation:
 
-Module d'infrastructure cloud AWS sécurisée avec Terraform.
-
-## Technologies
-
-Terraform, AWS, IAM, S3, VPC, CloudTrail, Checkov.
-
-## Statut
-
-Structure initiale du module.
-# CloudGuard
-
-CloudGuard documents the design, deployment and security validation of an AWS infrastructure built entirely with Terraform.
-
-The laboratory reproduces the initial layers of a production-oriented cloud environment where networking, identity management, monitoring and compliance controls are introduced before hosting any application workload.
-
-Every infrastructure component is deployed as code, version controlled and validated before being integrated into the platform.
-
----
-
-# Engineering Objectives
-
-The project is designed to build a secure AWS foundation capable of supporting future applications while remaining reproducible, auditable and compliant with common cloud security practices.
-
-The implementation progressively introduces identity management, network segmentation, encrypted storage, centralized logging and infrastructure validation to reduce the attack surface from the infrastructure layer.
-
----
-
-# Laboratory Architecture
-
-The target infrastructure includes:
-
-- **1 AWS Region**
-- **1 Virtual Private Cloud (VPC)**
-- **2 Availability Zones**
-- **4 Subnets (2 Public / 2 Private)**
-- **2 Route Tables**
-- **1 Internet Gateway**
-- **1 NAT Gateway**
-- **6 Security Groups**
-- **5 IAM Roles**
-- **3 IAM Policies**
-- **2 EC2 Instances**
-- **2 Encrypted Amazon S3 Buckets**
-- **1 CloudTrail Trail**
-- **1 CloudWatch Log Group**
-- **1 KMS Key**
-- **1 AWS Config Recorder**
-- **25+ Terraform-managed Resources**
-
-The infrastructure is intentionally modular so each component can be deployed, validated and extended independently.
-
----
-
-# Repository Structure
-
-```
-terraform/
-├── provider.tf
-├── variables.tf
-├── main.tf
-├── outputs.tf
-└── modules/
-
-docs/
+```text
+Terraform
+   ↓
+Infrastructure CI
+   ↓
+Application Security CI
+   ↓
+GitHub production deployment
+   ↓
+AWS production environment
+   ↓
+HTTPS runtime validation
+   ↓
+OWASP ZAP DAST
 ```
 
----
+## Executive summary
 
-# Security Controls
+CloudGuard deploys an AWS environment in `eu-west-3` with:
 
-CloudGuard integrates security controls directly into the infrastructure design.
-
-The laboratory applies:
-
-- least-privilege IAM permissions
-- network segmentation across multiple Availability Zones
-- restrictive Security Groups
-- encrypted object storage
-- infrastructure activity logging
-- centralized monitoring
-- infrastructure compliance verification
-- Infrastructure as Code security analysis
-
-Security controls are introduced progressively and validated before additional services are deployed.
-
----
-
-# Validation Workflow
-
-Every infrastructure iteration follows the same engineering process.
-
-1. Terraform formatting and validation
-2. Infrastructure planning
-3. Secure resource deployment
-4. Static analysis with Checkov
-5. Configuration review
-6. Functional verification
-7. Documentation of security decisions
-
-Each validation stage produces reproducible evidence allowing the environment to be rebuilt and independently verified.
+- 1 VPC (`10.0.0.0/16`);
+- 2 Availability Zones;
+- 2 public + 2 private subnets;
+- Internet Gateway + NAT Gateway;
+- S3 gateway endpoint and private SSM-related endpoints;
+- 2 private EC2 instances;
+- Application Load Balancer exposed through HTTPS;
+- Route 53 DNS + ACM certificate for `app.cloudguardlab.fr`;
+- private PostgreSQL RDS;
+- KMS encryption;
+- CloudTrail, CloudWatch and AWS Config;
+- remote Terraform backend in S3 with KMS encryption and locking;
+- GitHub OIDC with separate PLAN and DEPLOY IAM roles;
+- SAST, secret detection, dependency scanning, image scanning and DAST.
 
 ---
 
-# Technical Stack
+## Architecture
 
-Infrastructure as Code
+![CloudGuard architecture](architecture/images/architecture-overview.png)
 
-- Terraform
+- [Open full-resolution architecture](architecture/images/architecture-full.png)
+- [Architecture PDF](architecture/cloudguard-architecture-v3.pdf)
+- [Draw.io source](architecture/cloudguard-architecture-v3.drawio)
 
-Cloud Platform
+### Deployed VPC
 
-- AWS
+![AWS VPC resource map](../docs/evidence/cloudguard/05-vpc-resource-map.png)
 
-Core Services
+The deployed VPC separates Internet-facing ingress from private compute and data layers.
 
-- VPC
-- EC2
-- IAM
-- S3
-- CloudTrail
-- CloudWatch
-- AWS Config
-- KMS
+```text
+Internet
+   │
+Route 53 / ACM
+   │
+ALB — HTTPS :443
+   │
+Target Group
+   │
+Private App EC2 :8080
+   │
+Private PostgreSQL RDS :5432
 
-Security Validation
-
-- Checkov
-
----
-
-# Skills Developed
-
-This laboratory develops practical experience in:
-
-- AWS Security Architecture
-- Infrastructure as Code
-- Secure Cloud Networking
-- Identity and Access Management
-- Infrastructure Compliance
-- Cloud Monitoring
-- Cloud Logging
-- Cloud Security Engineering
+Private Admin EC2
+   │
+AWS Systems Manager
+   │
+VPC Endpoints
+```
 
 ---
 
-# Planned Extensions
+## Security architecture
 
-Future iterations will extend the platform with:
+### Identity & CI/CD
 
-- GuardDuty
-- Security Hub
-- AWS Inspector
-- VPC Flow Logs
-- Secrets Manager
-- IAM Access Analyzer
-- Multi-account architecture
-- Automated compliance reporting
+- GitHub Actions authenticates to AWS through **OIDC**.
+- No long-lived AWS access keys are stored in GitHub.
+- A dedicated **PLAN** role performs infrastructure planning.
+- A separate **DEPLOY** role is trusted from the GitHub `production` environment.
+- Production deployment is manually triggered with an explicit boolean deploy input and runs in the GitHub `production` environment.
 
-Every extension will include architecture updates, implementation notes and validation evidence.
+### Network security
+
+- Application and administration EC2 instances are private.
+- No inbound SSH administration path is required.
+- SSM connectivity is provided through private VPC endpoints.
+- Security groups implement explicit ALB → app and app → RDS paths.
+- RDS is **not publicly accessible**.
+- Public ingress terminates on the ALB over HTTPS.
+
+### Encryption & governance
+
+- Terraform remote state uses S3 + KMS + locking.
+- Audit data uses KMS-backed encryption.
+- RDS storage is encrypted.
+- CloudTrail, CloudWatch and AWS Config provide governance and audit visibility.
 
 ---
 
-# Current Status
+## DevSecOps pipelines
 
-The project structure and Terraform foundation have been established.
+CloudGuard uses three complementary GitHub Actions workflows.
 
-Infrastructure components are implemented incrementally following the same engineering workflow used throughout the Cyber Platform Lab.
+### 1. Infrastructure CI
 
-Configuration files, validation reports, architectural decisions and implementation notes will be progressively incorporated as the laboratory evolves.
+Workflow: [`.github/workflows/terraform-ci.yml`](../.github/workflows/terraform-ci.yml)
+
+Purpose:
+
+- Terraform format / validation;
+- secret scanning;
+- Infrastructure as Code security scanning;
+- AWS OIDC authentication;
+- LAB and PRODUCTION plans;
+- no automatic infrastructure apply.
+
+Validated pre-deployment plans:
+
+```text
+LAB        31 to add, 0 to change, 0 to destroy
+PRODUCTION 78 to add, 0 to change, 0 to destroy
+```
+
+The LAB profile intentionally disables the public HTTPS listener while PRODUCTION enables the full ingress path.
+
+### 2. Application Security CI
+
+Workflow: [`.github/workflows/application-security-ci.yml`](../.github/workflows/application-security-ci.yml)
+
+| Control | Purpose |
+|---|---|
+| Python validation | Syntax validation |
+| Gitleaks | Secret detection |
+| Semgrep | Static Application Security Testing |
+| Trivy filesystem | Dependency vulnerability analysis |
+| Docker build | Reproducible application artifact |
+| Non-root validation | Container privilege reduction |
+| Health check | Runtime validation |
+| Trivy image | Container vulnerability analysis |
+
+### 3. Production Deployment & DAST
+
+Workflow: [`.github/workflows/deployment-dast.yml`](../.github/workflows/deployment-dast.yml)
+
+The production workflow performs:
+
+1. GitHub OIDC authentication;
+2. Terraform initialization against the remote backend;
+3. production plan;
+4. controlled `terraform apply`;
+5. ALB target-health wait;
+6. HTTPS health verification;
+7. OWASP ZAP Full Scan;
+8. ZAP report upload as a workflow artifact.
+
+---
+
+## Runtime validation
+
+The deployed path is:
+
+```text
+HTTPS :443
+→ cloudguard-alb
+→ cloudguard-app-tg
+→ private application EC2 :8080
+```
+
+AWS reported the registered target as healthy before the pipeline continued to DAST.
+
+### Private database
+
+PostgreSQL RDS is deployed with:
+
+- engine: PostgreSQL;
+- instance class: `db.t3.micro`;
+- port: `5432`;
+- publicly accessible: **No**;
+- encrypted storage;
+- Secrets Manager-managed master credentials;
+- enhanced monitoring.
+
+### Application health
+
+![Application health endpoint](../docs/evidence/cloudguard/09-health-endpoint.png)
+
+The public HTTPS endpoint reaches the private application instance successfully.
+
+---
+
+## DAST evidence
+
+The live production endpoint was scanned with OWASP ZAP after deployment.
+
+```text
+FAIL-NEW: 0
+FAIL-INPROG: 0
+WARN-NEW: 5
+WARN-INPROG: 0
+INFO: 0
+IGNORE: 0
+PASS: 136
+```
+
+Representative warnings:
+
+- `X-Content-Type-Options` header missing;
+- HSTS header not set;
+- server version information exposure;
+- Spring Actuator information exposure;
+- Cross-Origin-Resource-Policy header missing or invalid.
+
+These findings are documented as remediation work rather than removed from the evidence.
+
+---
+
+## Repository layout
+
+```text
+01-terraform-aws/
+├── bootstrap/
+│   ├── backend/
+│   ├── dns/
+│   └── github-oidc/
+├── architecture/
+└── terraform/
+    ├── environments/
+    │   ├── lab.tfvars
+    │   └── production.tfvars
+    └── *.tf
+
+02-ci-security/
+├── app/
+├── Dockerfile
+└── requirements.txt
+
+.github/workflows/
+├── terraform-ci.yml
+├── application-security-ci.yml
+└── deployment-dast.yml
+```
+
+---
+
+## Reproducibility and cost control
+
+The persistent foundation is deliberately separated from the disposable production stack.
+
+**Persistent**
+
+- Terraform state backend;
+- Route 53 hosted zone;
+- GitHub OIDC bootstrap.
+
+**Recreatable**
+
+- application VPC;
+- ALB;
+- EC2;
+- RDS;
+- NAT Gateway;
+- VPC endpoints;
+- audit / governance resources.
+
+This allows the production lab to be deployed for validation and then removed to control AWS costs.
+
+---
+
+## What this project demonstrates
+
+- AWS network architecture and segmentation;
+- Terraform state and lifecycle management;
+- IAM and workload identity federation;
+- secure CI/CD design;
+- container hardening;
+- SAST / secrets / dependency / image scanning;
+- TLS and load balancing;
+- private database design;
+- AWS governance services;
+- post-deployment DAST;
+- security finding documentation and remediation workflow.
 
 ---
 
@@ -182,4 +294,4 @@ Configuration files, validation reports, architectural decisions and implementat
 
 **Alain SEUGNE**
 
-OSCP • Cloud Security • Infrastructure Security • DevSecOps
+Cloud Security • DevSecOps • Infrastructure Security
