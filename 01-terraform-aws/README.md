@@ -39,6 +39,37 @@ CloudGuard deploys an AWS environment in `eu-west-3` with:
 - GitHub OIDC with separate PLAN and DEPLOY IAM roles;
 - SAST, secret detection, dependency scanning, image scanning and DAST.
 
+## Engineering proof — from commit to runtime
+
+This case study is documented as an evidence chain, not as a list of claimed technologies:
+
+```text
+Terraform / IaC
+      ↓
+Infrastructure CI
+      ↓
+Application & Container Security
+      ↓
+GitHub OIDC production deployment
+      ↓
+AWS VPC / ALB / private compute / RDS
+      ↓
+Target health + HTTPS runtime validation
+      ↓
+OWASP ZAP DAST
+```
+
+| Layer | Evidence |
+|---|---|
+| IaC & pipeline | Terraform validation, secret scanning, IaC scanning, LAB/PRODUCTION plans |
+| AppSec | Gitleaks, Semgrep, Trivy filesystem and image scanning |
+| Identity | GitHub OIDC; separate PLAN and DEPLOY AWS roles |
+| Network | public ALB; private application/admin subnets; private RDS |
+| TLS | ALB listener on HTTPS :443 with ACM certificate |
+| Runtime | registered EC2 target reported Healthy |
+| Application | public HTTPS health endpoint reaches the private app tier |
+| DAST | OWASP ZAP Full Scan — 136 PASS / 5 WARN / 0 FAIL |
+
 ---
 
 ## Architecture
@@ -51,7 +82,13 @@ CloudGuard deploys an AWS environment in `eu-west-3` with:
 
 ### Deployed VPC
 
-![AWS VPC resource map](../docs/evidence/cloudguard/05-vpc-resource-map.png)
+<p align="center">
+  <a href="../docs/evidence/cloudguard/05-vpc-resource-map.png">
+    <img src="../docs/evidence/cloudguard/05-vpc-resource-map.png" alt="CloudGuard deployed AWS VPC resource map" width="100%">
+  </a>
+</p>
+
+**What this proves:** the deployed network contains two Availability Zones, public/private subnet separation, dedicated route tables, an Internet Gateway, NAT egress and an S3 VPC endpoint.
 
 The deployed VPC separates Internet-facing ingress from private compute and data layers.
 
@@ -176,6 +213,24 @@ HTTPS :443
 
 AWS reported the registered target as healthy before the pipeline continued to DAST.
 
+### Load balancer and target health
+
+<p align="center">
+  <a href="../docs/evidence/cloudguard/07-alb-https.png">
+    <img src="../docs/evidence/cloudguard/07-alb-https.png" alt="CloudGuard ALB HTTPS listener" width="100%">
+  </a>
+</p>
+
+The internet-facing ALB terminates **HTTPS :443** and forwards requests to `cloudguard-app-tg`.
+
+<p align="center">
+  <a href="../docs/evidence/cloudguard/06-target-group-healthy.png">
+    <img src="../docs/evidence/cloudguard/06-target-group-healthy.png" alt="CloudGuard target group healthy EC2 target" width="100%">
+  </a>
+</p>
+
+The target group reports **1 Healthy / 0 Unhealthy** target on application port `8080`. This is the runtime hand-off between the public ALB and the private application tier.
+
 ### Private database
 
 PostgreSQL RDS is deployed with:
@@ -190,9 +245,13 @@ PostgreSQL RDS is deployed with:
 
 ### Application health
 
-![Application health endpoint](../docs/evidence/cloudguard/09-health-endpoint.png)
+<p align="center">
+  <a href="../docs/evidence/cloudguard/09-health-endpoint.png">
+    <img src="../docs/evidence/cloudguard/09-health-endpoint.png" alt="CloudGuard HTTPS health endpoint" width="100%">
+  </a>
+</p>
 
-The public HTTPS endpoint reaches the private application instance successfully.
+The `/health` response proves that the public HTTPS entry point reaches the private application tier successfully; the returned hostname is the internal EC2 hostname.
 
 ---
 
@@ -287,6 +346,24 @@ This allows the production lab to be deployed for validation and then removed to
 - AWS governance services;
 - post-deployment DAST;
 - security finding documentation and remediation workflow.
+
+---
+
+## What a reviewer can verify in this repository
+
+A technical reviewer can move from evidence to implementation without relying on screenshots alone:
+
+- inspect the Terraform modules and environment profiles;
+- inspect the GitHub Actions workflows and OIDC role separation;
+- verify the application/container hardening controls;
+- review the deployed AWS network and runtime evidence;
+- inspect the DAST result and the documented remediation items.
+
+The intended review path is:
+
+> **README → evidence → workflow/configuration → Terraform/application code**
+
+This keeps the project auditable and makes every major portfolio claim traceable to implementation.
 
 ---
 
