@@ -6,6 +6,10 @@ The active workflow is:
 
 [`.github/workflows/application-security-ci.yml`](../.github/workflows/application-security-ci.yml)
 
+## Pipeline evidence
+
+[![Application Security CI](../docs/evidence/cloudguard/02-application-security-ci.png)](../docs/evidence/cloudguard/02-application-security-ci.png)
+
 ## Pipeline controls
 
 | Control | Purpose |
