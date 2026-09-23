@@ -1,10 +1,18 @@
 # Cyber Platform Lab
 
+[![Infrastructure CI](https://github.com/Seugne/cyber-platform-lab/actions/workflows/terraform-ci.yml/badge.svg?branch=main)](https://github.com/Seugne/cyber-platform-lab/actions/workflows/terraform-ci.yml)
+[![Application Security CI](https://github.com/Seugne/cyber-platform-lab/actions/workflows/application-security-ci.yml/badge.svg?branch=main)](https://github.com/Seugne/cyber-platform-lab/actions/workflows/application-security-ci.yml)
+[![Deployment & DAST](https://github.com/Seugne/cyber-platform-lab/actions/workflows/deployment-dast.yml/badge.svg?branch=main)](https://github.com/Seugne/cyber-platform-lab/actions/workflows/deployment-dast.yml)
+
+
 > **Security engineering portfolio focused on Cloud Security, DevSecOps, Kubernetes Security, Detection Engineering and Secrets Management.**
 
 This repository is structured as a set of hands-on engineering case studies. The goal is not to collect isolated demos, but to show how I design, secure, automate, validate and document infrastructure so another engineer can review the decisions and evidence.
 
 ## Featured case study — CloudGuard
+
+> **Project 1 status: deployed, runtime-validated and security-tested on AWS.**
+
 
 **CloudGuard** is a production-oriented AWS security lab built with Terraform and GitHub Actions.
 
@@ -23,6 +31,18 @@ It combines:
 - application, dependency and container security scans;
 - controlled production deployment;
 - post-deployment OWASP ZAP DAST.
+
+### Recruiter quick scan
+
+| Area | Implementation |
+|---|---|
+| Cloud | AWS `eu-west-3`, 2 AZ, public/private subnet segmentation |
+| IaC | Terraform with remote S3 state, KMS encryption and locking |
+| Identity | GitHub OIDC; separate PLAN and DEPLOY IAM roles |
+| Runtime | Private EC2 application, ALB HTTPS :443, private PostgreSQL RDS |
+| AppSec | Gitleaks, Semgrep, Trivy filesystem + image |
+| Production test | HTTPS health validation + OWASP ZAP full DAST |
+| DAST outcome | **136 PASS / 5 WARN / 0 FAIL** |
 
 ### What was validated
 
