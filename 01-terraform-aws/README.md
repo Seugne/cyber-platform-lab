@@ -1,5 +1,10 @@
 # CloudGuard — Secure AWS Production Platform
 
+[![Infrastructure CI](https://github.com/Seugne/cyber-platform-lab/actions/workflows/terraform-ci.yml/badge.svg?branch=main)](https://github.com/Seugne/cyber-platform-lab/actions/workflows/terraform-ci.yml)
+[![Application Security CI](https://github.com/Seugne/cyber-platform-lab/actions/workflows/application-security-ci.yml/badge.svg?branch=main)](https://github.com/Seugne/cyber-platform-lab/actions/workflows/application-security-ci.yml)
+[![Deployment & DAST](https://github.com/Seugne/cyber-platform-lab/actions/workflows/deployment-dast.yml/badge.svg?branch=main)](https://github.com/Seugne/cyber-platform-lab/actions/workflows/deployment-dast.yml)
+
+
 CloudGuard is a production-oriented AWS security case study built with **Terraform**, **GitHub Actions** and layered DevSecOps controls.
 
 It demonstrates the complete path from infrastructure design to production validation:
@@ -19,6 +24,20 @@ HTTPS runtime validation
    ↓
 OWASP ZAP DAST
 ```
+
+## Recruiter / engineering quick scan
+
+| Question | Answer |
+|---|---|
+| What is it? | Secure AWS production platform built and validated end-to-end |
+| How is it provisioned? | Terraform |
+| How does CI authenticate to AWS? | GitHub OIDC — no long-lived AWS keys |
+| Where are workloads? | Private EC2 subnets; public ingress only through ALB |
+| How is the database exposed? | It is not public; PostgreSQL RDS stays private |
+| How is delivery controlled? | Separate PLAN/DEPLOY roles + manual production input |
+| What security gates run? | Gitleaks, Trivy IaC/FS/Image, Semgrep, non-root check, health check |
+| What happens after deploy? | HTTPS verification, target health validation, OWASP ZAP DAST |
+| DAST result | **136 PASS / 5 WARN / 0 FAIL** |
 
 ## Executive summary
 
