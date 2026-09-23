@@ -34,7 +34,7 @@ It combines:
 | Dependency / filesystem scan | Trivy |
 | Container hardening | non-root runtime + image scan |
 | AWS authentication | GitHub OIDC with separate PLAN and DEPLOY roles |
-| Production delivery | protected GitHub `production` environment |
+| Production delivery | GitHub `production` environment + explicit manual deploy input |
 | Runtime health | ALB target healthy + HTTPS health endpoint |
 | DAST | OWASP ZAP Full Scan |
 | ZAP result | **136 PASS / 5 WARN / 0 FAIL** |
@@ -108,7 +108,7 @@ Security checks are treated as deployment controls rather than documentation-onl
 - **TLS termination at the ALB:** public traffic reaches `app.cloudguardlab.fr` over HTTPS.
 - **Private database:** PostgreSQL RDS is not publicly accessible.
 - **Remote Terraform state:** S3 + KMS + locking are kept outside the disposable application stack.
-- **Security gates before and after deployment:** static controls run before delivery; ZAP validates the live HTTPS endpoint afterward.
+- **Security gates before and after deployment:** static controls run before delivery; the deployment workflow rejects unexpected Terraform changes/destructions; ZAP validates the live HTTPS endpoint afterward.
 - **Evidence-driven validation:** CI summaries, AWS state and security scan artifacts are retained as implementation evidence.
 
 ---
