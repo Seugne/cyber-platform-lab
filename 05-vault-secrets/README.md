@@ -18,7 +18,7 @@ The implementation progressively introduces authentication methods, access polic
 
 ## Technical Scope
 
-Current implementation includes:
+Target implementation includes:
 
 - HashiCorp Vault
 - Docker Compose
@@ -140,14 +140,4 @@ Each improvement will be documented together with its implementation rationale a
 
 Alain SEUGNE
 
-Cloud Security • DevSecOps • Infrastructure Security# 05-vault-secrets
-
-Module de gestion des secrets avec HashiCorp Vault.
-
-## Technologies
-
-HashiCorp Vault, Docker, Terraform, GitHub Actions, IAM.
-
-## Statut
-
-Structure initiale du module.
+Cloud Security • DevSecOps • Infrastructure Security

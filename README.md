@@ -2,7 +2,15 @@
 
 > **Security engineering portfolio focused on Cloud Security, DevSecOps, Kubernetes Security, Detection Engineering and Secrets Management.**
 
+<p align="center">
+  <a href="01-terraform-aws/architecture/images/architecture-full.png">
+    <img src="01-terraform-aws/architecture/images/architecture-overview.png" alt="CloudGuard AWS architecture" width="100%">
+  </a>
+</p>
+
 This repository is structured as a set of hands-on engineering case studies. The goal is not to collect isolated demos, but to show how I design, secure, automate, validate and document infrastructure so another engineer can review the decisions and evidence.
+
+> **Current flagship project:** CloudGuard — an end-to-end AWS / Terraform / DevSecOps case study. The remaining modules extend the same portfolio into Kubernetes hardening, detection engineering and secrets management.
 
 ## Featured case study — CloudGuard
 
@@ -42,11 +50,11 @@ It combines:
 ### Evidence at a glance
 
 <p align="center">
-  <a href="docs/evidence/cloudguard/05-vpc-resource-map.png">
-    <img src="docs/evidence/cloudguard/05-vpc-resource-map.png" alt="CloudGuard deployed VPC" width="49%">
+  <a href="screenshots/05-vpc-resource-map.png">
+    <img src="screenshots/05-vpc-resource-map.png" alt="CloudGuard deployed VPC" width="49%">
   </a>
-  <a href="docs/evidence/cloudguard/09-health-endpoint.png">
-    <img src="docs/evidence/cloudguard/09-health-endpoint.png" alt="CloudGuard HTTPS health endpoint" width="49%">
+  <a href="screenshots/09-health-endpoint.png">
+    <img src="screenshots/09-health-endpoint.png" alt="CloudGuard HTTPS health endpoint" width="49%">
   </a>
 </p>
 
@@ -89,6 +97,10 @@ Security checks are treated as deployment controls rather than documentation-onl
 | [03-k8s-hardening](03-k8s-hardening/) | Kubernetes hardening | Portfolio module |
 | [04-detection-lab](04-detection-lab/) | Detection engineering / SOC | Portfolio module |
 | [05-vault-secrets](05-vault-secrets/) | Secrets management / Vault | Portfolio module |
+
+### Next case study
+
+**K8sSec — Kubernetes hardening** is the next portfolio module in progress. It extends the same evidence-driven approach into RBAC, network isolation, admission control and runtime detection.
 
 ---
 

@@ -18,7 +18,7 @@ The environment progressively integrates detection rules, attack simulations and
 
 ## Technical Scope
 
-Current implementation includes:
+Target implementation includes:
 
 - Elastic Stack
 - Wazuh
@@ -138,14 +138,4 @@ Each improvement will be documented together with validation evidence and implem
 
 Alain SEUGNE
 
-Security Operations • Detection Engineering • Blue Team# 04-detection-lab
-
-Module de détection sécurité avec Elastic et Wazuh.
-
-## Technologies
-
-Elastic Stack, Wazuh, Docker Compose, Sigma, Python, Bash.
-
-## Statut
-
-Structure initiale du module.
+Security Operations • Detection Engineering • Blue Team

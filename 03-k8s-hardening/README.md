@@ -18,7 +18,7 @@ The platform is built around a **3-node Kubernetes cluster** and progressively i
 
 ## Technical Scope
 
-Current implementation includes:
+Target implementation includes:
 
 - Kubernetes (k3s)
 - Docker
@@ -142,14 +142,4 @@ Each improvement will be documented together with its implementation, rationale 
 
 Alain SEUGNE
 
-Cloud Security • Kubernetes Security • DevSecOps# 03-k8s-hardening
-
-Module de durcissement Kubernetes.
-
-## Technologies
-
-Kubernetes, k3d, kubectl, Helm, OPA Gatekeeper, Falco, Calico.
-
-## Statut
-
-Structure initiale du module.
+Cloud Security • Kubernetes Security • DevSecOps
