@@ -1,5 +1,8 @@
 # SecurePipeline — Application & Container Security CI
 
+[![Application Security CI](https://github.com/Seugne/cyber-platform-lab/actions/workflows/application-security-ci.yml/badge.svg?branch=main)](https://github.com/Seugne/cyber-platform-lab/actions/workflows/application-security-ci.yml)
+
+
 SecurePipeline is the application-security component of the CloudGuard case study. It validates source code, secrets, dependencies, the Docker image and application runtime before production deployment.
 
 The active workflow is:
