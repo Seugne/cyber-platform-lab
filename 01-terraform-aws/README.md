@@ -72,32 +72,6 @@ OWASP ZAP DAST
 
 ---
 
-## Evidence gallery
-
-The screenshots below are ordered in the same sequence as the engineering workflow. Click any image to inspect the full-resolution proof.
-
-| 1 — Infrastructure CI | 2 — Application Security CI |
-|---|---|
-| [![Infrastructure CI](../docs/evidence/cloudguard/01-infrastructure-ci.png)](../docs/evidence/cloudguard/01-infrastructure-ci.png) | [![Application Security CI](../docs/evidence/cloudguard/02-application-security-ci.png)](../docs/evidence/cloudguard/02-application-security-ci.png) |
-
-| 3 — Production deployment & DAST | 4 — OWASP ZAP result |
-|---|---|
-| [![Deployment and DAST](../docs/evidence/cloudguard/03-deployment-dast.png)](../docs/evidence/cloudguard/03-deployment-dast.png) | [![OWASP ZAP results](../docs/evidence/cloudguard/04-zap-results.png)](../docs/evidence/cloudguard/04-zap-results.png) |
-
-| 5 — VPC resource map | 6 — Target group health |
-|---|---|
-| [![VPC resource map](../docs/evidence/cloudguard/05-vpc-resource-map.png)](../docs/evidence/cloudguard/05-vpc-resource-map.png) | [![Target group healthy](../docs/evidence/cloudguard/06-target-group-healthy.png)](../docs/evidence/cloudguard/06-target-group-healthy.png) |
-
-| 7 — ALB HTTPS listener | 8 — Private RDS |
-|---|---|
-| [![ALB HTTPS](../docs/evidence/cloudguard/07-alb-https.png)](../docs/evidence/cloudguard/07-alb-https.png) | [![Private RDS](../docs/evidence/cloudguard/08-rds-private.png)](../docs/evidence/cloudguard/08-rds-private.png) |
-
-| 9 — HTTPS health endpoint |
-|---|
-| [![Health endpoint](../docs/evidence/cloudguard/09-health-endpoint.png)](../docs/evidence/cloudguard/09-health-endpoint.png) |
-
----
-
 ## Architecture
 
 ![CloudGuard architecture](architecture/images/architecture-overview.png)
@@ -108,7 +82,11 @@ The screenshots below are ordered in the same sequence as the engineering workfl
 
 ### Deployed VPC
 
-**Evidence:** [AWS VPC Resource Map](../docs/evidence/cloudguard/05-vpc-resource-map.png)
+<p align="center">
+  <a href="../docs/evidence/cloudguard/05-vpc-resource-map.png">
+    <img src="../docs/evidence/cloudguard/05-vpc-resource-map.png" alt="CloudGuard deployed AWS VPC resource map" width="100%">
+  </a>
+</p>
 
 **What this proves:** the deployed network contains two Availability Zones, public/private subnet separation, dedicated route tables, an Internet Gateway, NAT egress and an S3 VPC endpoint.
 
@@ -170,8 +148,6 @@ CloudGuard uses three complementary GitHub Actions workflows.
 
 ### 1. Infrastructure CI
 
-**Evidence:** [Infrastructure CI run](../docs/evidence/cloudguard/01-infrastructure-ci.png)
-
 Workflow: [`.github/workflows/terraform-ci.yml`](../.github/workflows/terraform-ci.yml)
 
 Purpose:
@@ -194,8 +170,6 @@ The LAB profile intentionally disables the public HTTPS listener while PRODUCTIO
 
 ### 2. Application Security CI
 
-**Evidence:** [Application Security CI run](../docs/evidence/cloudguard/02-application-security-ci.png)
-
 Workflow: [`.github/workflows/application-security-ci.yml`](../.github/workflows/application-security-ci.yml)
 
 | Control | Purpose |
@@ -210,8 +184,6 @@ Workflow: [`.github/workflows/application-security-ci.yml`](../.github/workflows
 | Trivy image | Container vulnerability analysis |
 
 ### 3. Production Deployment & DAST
-
-**Evidence:** [Production deployment & DAST run](../docs/evidence/cloudguard/03-deployment-dast.png)
 
 Workflow: [`.github/workflows/deployment-dast.yml`](../.github/workflows/deployment-dast.yml)
 
@@ -243,15 +215,23 @@ AWS reported the registered target as healthy before the pipeline continued to D
 
 ### Load balancer and target health
 
-**Evidence:** [ALB HTTPS listener](../docs/evidence/cloudguard/07-alb-https.png) · [Target Group Healthy](../docs/evidence/cloudguard/06-target-group-healthy.png)
+<p align="center">
+  <a href="../docs/evidence/cloudguard/07-alb-https.png">
+    <img src="../docs/evidence/cloudguard/07-alb-https.png" alt="CloudGuard ALB HTTPS listener" width="100%">
+  </a>
+</p>
 
 The internet-facing ALB terminates **HTTPS :443** and forwards requests to `cloudguard-app-tg`.
+
+<p align="center">
+  <a href="../docs/evidence/cloudguard/06-target-group-healthy.png">
+    <img src="../docs/evidence/cloudguard/06-target-group-healthy.png" alt="CloudGuard target group healthy EC2 target" width="100%">
+  </a>
+</p>
 
 The target group reports **1 Healthy / 0 Unhealthy** target on application port `8080`. This is the runtime hand-off between the public ALB and the private application tier.
 
 ### Private database
-
-**Evidence:** [Private PostgreSQL RDS](../docs/evidence/cloudguard/08-rds-private.png)
 
 PostgreSQL RDS is deployed with:
 
@@ -265,15 +245,17 @@ PostgreSQL RDS is deployed with:
 
 ### Application health
 
-**Evidence:** [HTTPS health endpoint](../docs/evidence/cloudguard/09-health-endpoint.png)
+<p align="center">
+  <a href="../docs/evidence/cloudguard/09-health-endpoint.png">
+    <img src="../docs/evidence/cloudguard/09-health-endpoint.png" alt="CloudGuard HTTPS health endpoint" width="100%">
+  </a>
+</p>
 
 The `/health` response proves that the public HTTPS entry point reaches the private application tier successfully; the returned hostname is the internal EC2 hostname.
 
 ---
 
 ## DAST evidence
-
-**Evidence:** [OWASP ZAP Full Scan result](../docs/evidence/cloudguard/04-zap-results.png)
 
 The live production endpoint was scanned with OWASP ZAP after deployment.
 
