@@ -4,7 +4,7 @@ SecurePipeline is the application-security component of the CloudGuard case stud
 
 The active workflow is:
 
-`/.github/workflows/application-security-ci.yml`
+[`.github/workflows/application-security-ci.yml`](../.github/workflows/application-security-ci.yml)
 
 ## Pipeline controls
 
@@ -18,8 +18,6 @@ The active workflow is:
 | Non-root validation | Runtime privilege reduction |
 | Health check | Application runtime verification |
 | Trivy image | Container vulnerability analysis |
-
-![Application Security CI](../docs/evidence/cloudguard/02-application-security-ci.png)
 
 ## Production relationship
 
@@ -37,9 +35,9 @@ live HTTPS endpoint
 OWASP ZAP Full Scan
 ```
 
-The deployment workflow lives at:
+The deployment workflow is:
 
-`/.github/workflows/deployment-dast.yml`
+[`.github/workflows/deployment-dast.yml`](../.github/workflows/deployment-dast.yml)
 
 and is protected by the GitHub `production` environment and AWS OIDC federation.
 
