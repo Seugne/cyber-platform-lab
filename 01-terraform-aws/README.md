@@ -187,13 +187,24 @@ The production workflow performs:
 The deployed path is:
 
 ```text
-HTTPS :443
-→ cloudguard-alb
-→ cloudguard-app-tg
-→ private application EC2 :8080
+Internet
+  ↓
+Route 53 / ACM
+  ↓
+ALB — HTTPS :443
+  ↓
+cloudguard-app-tg
+  ↓
+private application EC2 :8080
+  ↓
+private PostgreSQL RDS :5432
 ```
 
-AWS reported the registered target as healthy before the pipeline continued to DAST.
+### ALB target health
+
+![CloudGuard target group health](../docs/evidence/cloudguard/06-target-group-healthy.png)
+
+AWS reports **1 healthy / 0 unhealthy** registered application targets before the pipeline continues to HTTPS validation and DAST.
 
 ### Private database
 
@@ -211,9 +222,21 @@ PostgreSQL RDS is deployed with:
 
 ![Application health endpoint](../docs/evidence/cloudguard/09-health-endpoint.png)
 
-The public HTTPS endpoint reaches the private application instance successfully.
+The public HTTPS endpoint reaches the private application instance successfully. The returned internal EC2 hostname is also useful evidence that the public request terminates at the ALB and is forwarded to a private workload.
 
 ---
+
+## Evidence strategy
+
+The repository keeps the README focused on high-signal evidence rather than duplicating every console screen. CI/CD proof is linked through the live GitHub Actions workflows and badges; AWS screenshots are used where they prove runtime state that the source code alone cannot show.
+
+| Evidence | What it proves |
+|---|---|
+| VPC resource map | public/private segmentation, routing, IGW, NAT and S3 endpoint |
+| Target Group health | ALB can reach the private application on port 8080 |
+| HTTPS health endpoint | end-to-end public HTTPS → ALB → private EC2 path |
+| GitHub Actions workflows | repeatable IaC, AppSec and production/DAST automation |
+| ZAP workflow artifact | retained dynamic-security output |
 
 ## DAST evidence
 
