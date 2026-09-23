@@ -2,7 +2,7 @@
 
 CloudGuard is a production-oriented AWS security case study built with **Terraform**, **GitHub Actions** and layered DevSecOps controls.
 
-The project demonstrates the complete path from infrastructure design to production validation:
+It demonstrates the complete path from infrastructure design to production validation:
 
 ```text
 Terraform
@@ -20,10 +20,6 @@ HTTPS runtime validation
 OWASP ZAP DAST
 ```
 
-The goal is to demonstrate practical Cloud Security and DevSecOps engineering decisions that can be independently reviewed and reproduced.
-
----
-
 ## Executive summary
 
 CloudGuard deploys an AWS environment in `eu-west-3` with:
@@ -34,7 +30,7 @@ CloudGuard deploys an AWS environment in `eu-west-3` with:
 - Internet Gateway + NAT Gateway;
 - S3 gateway endpoint and private SSM-related endpoints;
 - 2 private EC2 instances;
-- Application Load Balancer exposed only through HTTPS;
+- Application Load Balancer exposed through HTTPS;
 - Route 53 DNS + ACM certificate for `app.cloudguardlab.fr`;
 - private PostgreSQL RDS;
 - KMS encryption;
@@ -57,7 +53,7 @@ CloudGuard deploys an AWS environment in `eu-west-3` with:
 
 ![AWS VPC resource map](../docs/evidence/cloudguard/05-vpc-resource-map.png)
 
-The deployed network separates Internet-facing ingress from private compute and data layers.
+The deployed VPC separates Internet-facing ingress from private compute and data layers.
 
 ```text
 Internet
@@ -88,7 +84,7 @@ VPC Endpoints
 - GitHub Actions authenticates to AWS through **OIDC**.
 - No long-lived AWS access keys are stored in GitHub.
 - A dedicated **PLAN** role performs infrastructure planning.
-- A separate **DEPLOY** role is trusted only from the GitHub `production` environment.
+- A separate **DEPLOY** role is trusted from the GitHub `production` environment.
 - Production deployment is manually triggered and explicitly gated.
 
 ### Network security
@@ -102,8 +98,8 @@ VPC Endpoints
 
 ### Encryption & governance
 
-- Terraform remote state uses S3 + KMS + state locking.
-- Application audit data uses KMS-backed encryption.
+- Terraform remote state uses S3 + KMS + locking.
+- Audit data uses KMS-backed encryption.
 - RDS storage is encrypted.
 - CloudTrail, CloudWatch and AWS Config provide governance and audit visibility.
 
@@ -115,7 +111,7 @@ CloudGuard uses three complementary GitHub Actions workflows.
 
 ### 1. Infrastructure CI
 
-![Infrastructure CI](../docs/evidence/cloudguard/01-infrastructure-ci.png)
+Workflow: [`.github/workflows/terraform-ci.yml`](../.github/workflows/terraform-ci.yml)
 
 Purpose:
 
@@ -126,7 +122,7 @@ Purpose:
 - LAB and PRODUCTION plans;
 - no automatic infrastructure apply.
 
-Pre-deployment plans validated:
+Validated pre-deployment plans:
 
 ```text
 LAB        31 to add, 0 to change, 0 to destroy
@@ -137,9 +133,7 @@ The LAB profile intentionally disables the public HTTPS listener while PRODUCTIO
 
 ### 2. Application Security CI
 
-![Application Security CI](../docs/evidence/cloudguard/02-application-security-ci.png)
-
-The application pipeline validates:
+Workflow: [`.github/workflows/application-security-ci.yml`](../.github/workflows/application-security-ci.yml)
 
 | Control | Purpose |
 |---|---|
@@ -154,7 +148,7 @@ The application pipeline validates:
 
 ### 3. Production Deployment & DAST
 
-![Production Deployment](../docs/evidence/cloudguard/03-deployment-dast.png)
+Workflow: [`.github/workflows/deployment-dast.yml`](../.github/workflows/deployment-dast.yml)
 
 The protected production workflow performs:
 
@@ -171,36 +165,20 @@ The protected production workflow performs:
 
 ## Runtime validation
 
-### Target Group
-
-![Healthy target](../docs/evidence/cloudguard/06-target-group-healthy.png)
-
-The ALB target group routes traffic to the private application instance on **HTTP :8080**. AWS reports:
-
-```text
-1 Healthy
-0 Unhealthy
-```
-
-### HTTPS ingress
-
-![ALB HTTPS listener](../docs/evidence/cloudguard/07-alb-https.png)
-
-The Application Load Balancer is Internet-facing and terminates TLS on:
+The deployed path is:
 
 ```text
 HTTPS :443
+→ cloudguard-alb
 → cloudguard-app-tg
-→ private EC2 :8080
+→ private application EC2 :8080
 ```
 
-The listener uses the ACM certificate for `app.cloudguardlab.fr`.
+AWS reported the registered target as healthy before the pipeline continued to DAST.
 
 ### Private database
 
-![Private PostgreSQL RDS](../docs/evidence/cloudguard/08-rds-private.png)
-
-PostgreSQL is deployed in the database subnet group with:
+PostgreSQL RDS is deployed with:
 
 - engine: PostgreSQL;
 - instance class: `db.t3.micro`;
@@ -214,20 +192,11 @@ PostgreSQL is deployed in the database subnet group with:
 
 ![Application health endpoint](../docs/evidence/cloudguard/09-health-endpoint.png)
 
-The public HTTPS endpoint reaches the private application instance successfully:
-
-```json
-{
-  "status": "healthy",
-  "service": "cloudguard-app"
-}
-```
+The public HTTPS endpoint reaches the private application instance successfully.
 
 ---
 
 ## DAST evidence
-
-![OWASP ZAP results](../docs/evidence/cloudguard/04-zap-results.png)
 
 The live production endpoint was scanned with OWASP ZAP after deployment.
 
@@ -283,7 +252,7 @@ These findings are documented as remediation work rather than removed from the e
 
 ## Reproducibility and cost control
 
-The persistent foundation is deliberately separated from the disposable production stack:
+The persistent foundation is deliberately separated from the disposable production stack.
 
 **Persistent**
 
