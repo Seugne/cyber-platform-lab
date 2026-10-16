@@ -6,8 +6,8 @@ app = Flask(__name__)
 @app.get("/")
 def index():
     return jsonify(
-        message="CloudGuard SecurePipeline application is running",
-        service="cloudguard-secure-pipeline",
+        message="CloudGuard application is running",
+        service="cloudguard-app",
     )
 
 
@@ -15,6 +15,5 @@ def index():
 def health():
     return jsonify(
         status="healthy",
-        service="cloudguard-secure-pipeline",
+        service="cloudguard-app",
     )
-

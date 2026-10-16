@@ -5,14 +5,14 @@ on:
     branches:
       - main
     paths:
-      - "02-ci-security/**"
+      - "01-terraform-aws/application/**"
       - ".github/workflows/application-security-ci.yml"
 
   push:
     branches:
       - main
     paths:
-      - "02-ci-security/**"
+      - "01-terraform-aws/application/**"
       - ".github/workflows/application-security-ci.yml"
 
   workflow_dispatch:
@@ -22,8 +22,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  IMAGE_NAME: cloudguard-secure-pipeline
-  APP_DIR: 02-ci-security
+  IMAGE_NAME: cloudguard-application
+  APP_DIR: 01-terraform-aws/application
 
 jobs:
   application-security:
@@ -42,7 +42,7 @@ jobs:
       - name: Validate Python syntax
         run: |
           python3 -m py_compile \
-            02-ci-security/app/app.py
+            01-terraform-aws/application/app/app.py
 
       - name: Gitleaks secret scan
         uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
@@ -59,13 +59,13 @@ jobs:
               --config p/python \
               --config p/security-audit \
               --error \
-              02-ci-security/app
+              01-terraform-aws/application/app
 
       - name: Trivy filesystem and dependency scan
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           scan-type: fs
-          scan-ref: 02-ci-security
+          scan-ref: 01-terraform-aws/application
           format: table
           severity: CRITICAL,HIGH
           ignore-unfixed: true
@@ -134,7 +134,7 @@ jobs:
         with:
           version: v0.74.0
           scan-type: image
-          image-ref: cloudguard-secure-pipeline:${{ github.sha }}
+          image-ref: cloudguard-application:${{ github.sha }}
           scanners: vuln
           format: table
           severity: CRITICAL,HIGH

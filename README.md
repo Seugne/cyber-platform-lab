@@ -93,14 +93,14 @@ Security checks are treated as deployment controls rather than documentation-onl
 | Module | Focus | Status |
 |---|---|---|
 | [01-terraform-aws](01-terraform-aws/) | AWS Cloud Security / Terraform | **Implemented & validated** |
-| [02-ci-security](02-ci-security/) | DevSecOps / AppSec / Container Security | **Implemented & integrated** |
+| [02-securepipeline](02-securepipeline/) | DevSecOps / AppSec / Software Supply Chain Security | **In progress** |
 | [03-k8s-hardening](03-k8s-hardening/) | Kubernetes hardening | Portfolio module |
 | [04-detection-lab](04-detection-lab/) | Detection engineering / SOC | Portfolio module |
 | [05-vault-secrets](05-vault-secrets/) | Secrets management / Vault | Portfolio module |
 
 ### Next case study
 
-**K8sSec — Kubernetes hardening** is the next portfolio module in progress. It extends the same evidence-driven approach into RBAC, network isolation, admission control and runtime detection.
+**SecurePipeline — DevSecOps / AppSec / Software Supply Chain Security** is the next portfolio case study in progress. It focuses on security gates across source, dependencies, container artifacts and Kubernetes delivery.
 
 ---
 
