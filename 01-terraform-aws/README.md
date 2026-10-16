@@ -294,16 +294,15 @@ These findings are documented as remediation work rather than removed from the e
 │   ├── dns/
 │   └── github-oidc/
 ├── architecture/
+├── application/
+│   ├── app/
+│   ├── Dockerfile
+│   └── requirements.txt
 └── terraform/
     ├── environments/
     │   ├── lab.tfvars
     │   └── production.tfvars
     └── *.tf
-
-02-ci-security/
-├── app/
-├── Dockerfile
-└── requirements.txt
 
 .github/workflows/
 ├── terraform-ci.yml
