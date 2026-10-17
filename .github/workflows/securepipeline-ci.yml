@@ -29,14 +29,14 @@ env:
 jobs:
   validate:
     name: Application & Container Validation
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     permissions:
       contents: read
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Validate Python syntax
         run: |
