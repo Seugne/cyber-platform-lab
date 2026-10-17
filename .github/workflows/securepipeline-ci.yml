@@ -55,7 +55,7 @@ jobs:
               --config p/python \
               --config p/security-audit \
               --error \
-              02-securepipeline/app
+              02-securepipeline
 
       - name: Validate Python syntax
         run: |
