@@ -45,6 +45,18 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Semgrep SAST
+        run: |
+          docker run --rm \
+            -v "${PWD}:/src" \
+            -w /src \
+            semgrep/semgrep:1.180.0 \
+            semgrep scan \
+              --config p/python \
+              --config p/security-audit \
+              --error \
+              02-securepipeline/app
+
       - name: Validate Python syntax
         run: |
           python3 -m py_compile \
