@@ -31,10 +31,12 @@ jobs:
     name: Application & Container Validation
     runs-on: ubuntu-24.04
 
-    permissions:
+  permissions:
       contents: read
-
-    steps:
+      packages: write
+      id-token: write
+  
+  steps:
       - name: Checkout repository
         uses: actions/checkout@v7
         with:
@@ -191,6 +193,80 @@ jobs:
 
           grep -q '"status":"healthy"' \
             /tmp/securepipeline-health.json
+      - name: Install Cosign
+        if: github.event_name == 'push'
+        uses: sigstore/cosign-installer@v4.1.2
+        with:
+          cosign-release: 'v3.1.4'
+
+      - name: Log in to GitHub Container Registry
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" \
+            | docker login ghcr.io \
+                -u "${{ github.actor }}" \
+                --password-stdin
+
+      - name: Publish image to GHCR
+        if: github.event_name == 'push'
+        id: publish
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          repository="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/securepipeline"
+          image="${repository}:${GITHUB_SHA}"
+
+          docker tag \
+            "${IMAGE_NAME}:${GITHUB_SHA}" \
+            "${image}"
+
+          docker push "${image}"
+
+          digest="$(
+            docker buildx imagetools inspect "${image}" \
+              | awk '/^Digest:/ {print $2; exit}'
+          )"
+
+          test -n "${digest}"
+
+          echo "Published image: ${image}"
+          echo "Digest: ${digest}"
+          echo "Immutable image: ${repository}@${digest}"
+
+          echo "image_uri=${repository}@${digest}" \
+            >> "${GITHUB_OUTPUT}"
+
+      - name: Sign image with GitHub OIDC
+        if: github.event_name == 'push'
+        env:
+          IMAGE_URI: ${{ steps.publish.outputs.image_uri }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          cosign sign \
+            --yes \
+            "${IMAGE_URI}"
+
+      - name: Verify image signature
+        if: github.event_name == 'push'
+        env:
+          IMAGE_URI: ${{ steps.publish.outputs.image_uri }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          expected_identity="https://github.com/${GITHUB_REPOSITORY}/.github/workflows/securepipeline-ci.yml@${GITHUB_REF}"
+
+          echo "Expected signer:"
+          echo "${expected_identity}"
+
+          cosign verify \
+            "${IMAGE_URI}" \
+            --certificate-identity="${expected_identity}" \
+            --certificate-oidc-issuer="https://token.actions.githubusercontent.com"
 
       - name: Show container logs
         if: always()
