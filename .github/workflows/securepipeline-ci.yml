@@ -94,6 +94,58 @@ jobs:
               --exit-code 1 \
               "${IMAGE_NAME}:${GITHUB_SHA}"
 
+      - name: Generate CycloneDX SBOM
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "${PWD}:/workspace" \
+            -w /workspace \
+            aquasec/trivy:0.76.0 \
+            image \
+              --format cyclonedx \
+              --output "${APP_DIR}/sbom.cdx.json" \
+              "${IMAGE_NAME}:${GITHUB_SHA}"
+
+          test -s "${APP_DIR}/sbom.cdx.json"
+
+          python3 - <<'PY'
+          import json
+          import os
+
+          path = os.path.join(
+              os.environ["APP_DIR"],
+              "sbom.cdx.json",
+          )
+
+          with open(path, encoding="utf-8") as f:
+              sbom = json.load(f)
+
+          bom_format = sbom.get("bomFormat")
+          spec_version = sbom.get("specVersion")
+          components = len(sbom.get("components", []))
+
+          print(f"SBOM format: {bom_format}")
+          print(f"Spec version: {spec_version}")
+          print(f"Components: {components}")
+
+          if bom_format != "CycloneDX":
+              raise SystemExit("Unexpected SBOM format")
+
+          if components == 0:
+              raise SystemExit("SBOM contains no components")
+          PY
+
+      - name: Upload CycloneDX SBOM
+        uses: actions/upload-artifact@v7
+        with:
+          name: securepipeline-sbom-${{ github.sha }}
+          path: 02-securepipeline/sbom.cdx.json
+          if-no-files-found: error
+          retention-days: 30
+
       - name: Verify non-root runtime
         shell: bash
         run: |
