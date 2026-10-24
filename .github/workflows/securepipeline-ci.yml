@@ -31,12 +31,12 @@ jobs:
     name: Application & Container Validation
     runs-on: ubuntu-24.04
 
-  permissions:
+    permissions:
       contents: read
       packages: write
       id-token: write
   
-  steps:
+    steps:
       - name: Checkout repository
         uses: actions/checkout@v7
         with:
