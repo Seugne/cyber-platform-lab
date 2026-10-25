@@ -35,7 +35,7 @@ jobs:
       contents: read
       packages: write
       id-token: write
-  
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -303,6 +303,36 @@ jobs:
             "${IMAGE_URI}" \
             --certificate-identity="${expected_identity}" \
             --certificate-oidc-issuer="https://token.actions.githubusercontent.com"
+
+      - name: Attest image with CycloneDX SBOM
+        if: github.event_name == 'push'
+        env:
+          IMAGE_URI: ${{ steps.publish.outputs.image_uri }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          cosign attest \
+            --yes \
+            --type cyclonedx \
+            --predicate "${APP_DIR}/sbom.cdx.json" \
+            "${IMAGE_URI}"
+
+      - name: Verify CycloneDX SBOM attestation
+        if: github.event_name == 'push'
+        env:
+          IMAGE_URI: ${{ steps.publish.outputs.image_uri }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          expected_identity="https://github.com/${GITHUB_REPOSITORY}/.github/workflows/securepipeline-ci.yml@${GITHUB_REF}"
+
+          cosign verify-attestation \
+            --type cyclonedx \
+            --certificate-identity="${expected_identity}" \
+            --certificate-oidc-issuer="https://token.actions.githubusercontent.com" \
+            "${IMAGE_URI}"
 
       - name: Show container logs
         if: always()
