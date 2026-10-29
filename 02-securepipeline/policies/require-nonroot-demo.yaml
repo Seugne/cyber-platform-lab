@@ -1,0 +1,30 @@
+apiVersion: policies.kyverno.io/v1
+kind: NamespacedValidatingPolicy
+metadata:
+  name: require-nonroot-demo
+  namespace: securepipeline
+
+spec:
+  validationActions:
+    - Deny
+
+  matchConstraints:
+    resourceRules:
+      - apiGroups:
+          - ""
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - pods
+
+  validations:
+    - expression: >-
+        object.spec.?securityContext.?runAsUser.orValue(0) > 0 &&
+        object.spec.?securityContext.?runAsGroup.orValue(0) > 0 &&
+        object.spec.containers.all(container,
+          container.?securityContext.?runAsUser.orValue(1) != 0 &&
+          container.?securityContext.?runAsGroup.orValue(1) != 0)
+      message: "SECUREPIPELINE: UID et GID doivent etre non-root."

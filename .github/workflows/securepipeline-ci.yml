@@ -1,0 +1,346 @@
+name: SecurePipeline CI
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "02-securepipeline/**"
+      - ".github/workflows/securepipeline-ci.yml"
+
+  push:
+    branches:
+      - securepipeline-app
+      - main
+    paths:
+      - "02-securepipeline/**"
+      - ".github/workflows/securepipeline-ci.yml"
+
+  workflow_dispatch:
+
+concurrency:
+  group: securepipeline-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  APP_DIR: 02-securepipeline
+  IMAGE_NAME: securepipeline
+
+jobs:
+  validate:
+    name: Application & Container Validation
+    runs-on: ubuntu-24.04
+
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Gitleaks secret scan
+        uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+
+      - name: Semgrep SAST
+        run: |
+          docker run --rm \
+            -v "${PWD}:/src" \
+            -w /src \
+            semgrep/semgrep:1.180.0 \
+            semgrep scan \
+              --config p/python \
+              --config p/security-audit \
+              --error \
+              02-securepipeline
+
+      - name: Trivy filesystem vulnerability scan
+        run: |
+          docker run --rm \
+            -v "${PWD}:/workspace" \
+            -w /workspace \
+            aquasec/trivy:0.76.0 \
+            fs \
+              --scanners vuln \
+              --severity HIGH,CRITICAL \
+              --ignore-unfixed \
+              --exit-code 1 \
+              02-securepipeline
+
+      - name: Validate Python syntax
+        run: |
+          python3 -m py_compile \
+            02-securepipeline/app/app.py
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t "${IMAGE_NAME}:${GITHUB_SHA}" \
+            "${APP_DIR}"
+
+      - name: Trivy container image vulnerability scan
+        run: |
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            aquasec/trivy:0.76.0 \
+            image \
+              --scanners vuln \
+              --severity HIGH,CRITICAL \
+              --ignore-unfixed \
+              --exit-code 1 \
+              "${IMAGE_NAME}:${GITHUB_SHA}"
+
+      - name: Generate CycloneDX SBOM
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "${PWD}:/workspace" \
+            -w /workspace \
+            aquasec/trivy:0.76.0 \
+            image \
+              --format cyclonedx \
+              --output "${APP_DIR}/sbom.cdx.json" \
+              "${IMAGE_NAME}:${GITHUB_SHA}"
+
+          test -s "${APP_DIR}/sbom.cdx.json"
+
+          python3 - <<'PY'
+          import json
+          import os
+
+          path = os.path.join(
+              os.environ["APP_DIR"],
+              "sbom.cdx.json",
+          )
+
+          with open(path, encoding="utf-8") as f:
+              sbom = json.load(f)
+
+          bom_format = sbom.get("bomFormat")
+          spec_version = sbom.get("specVersion")
+          components = len(sbom.get("components", []))
+
+          print(f"SBOM format: {bom_format}")
+          print(f"Spec version: {spec_version}")
+          print(f"Components: {components}")
+
+          if bom_format != "CycloneDX":
+              raise SystemExit("Unexpected SBOM format")
+
+          if components == 0:
+              raise SystemExit("SBOM contains no components")
+          PY
+
+      - name: Upload CycloneDX SBOM
+        uses: actions/upload-artifact@v7
+        with:
+          name: securepipeline-sbom-${{ github.sha }}
+          path: 02-securepipeline/sbom.cdx.json
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Verify non-root runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          identity="$(
+            docker run \
+              --rm \
+              --entrypoint id \
+              "${IMAGE_NAME}:${GITHUB_SHA}"
+          )"
+
+          echo "${identity}"
+
+          echo "${identity}" \
+            | grep -q 'uid=10001(securepipeline)'
+
+      - name: Start application
+        run: |
+          docker run \
+            -d \
+            --rm \
+            --name securepipeline-ci \
+            -p 18080:8080 \
+            "${IMAGE_NAME}:${GITHUB_SHA}"
+
+      - name: Verify application health
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          for attempt in {1..20}; do
+            if curl -fsS \
+              http://127.0.0.1:18080/health \
+              > /tmp/securepipeline-health.json; then
+              break
+            fi
+
+            sleep 1
+          done
+
+          cat /tmp/securepipeline-health.json
+
+          grep -q '"status":"healthy"' \
+            /tmp/securepipeline-health.json
+
+      - name: Install Cosign
+        if: github.event_name == 'push'
+        uses: sigstore/cosign-installer@v4.1.2
+        with:
+          cosign-release: 'v3.1.4'
+      - name: Sign CycloneDX SBOM
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          cosign sign-blob \
+            --yes \
+            --bundle "${APP_DIR}/sbom.sigstore.json" \
+            "${APP_DIR}/sbom.cdx.json"
+
+      - name: Verify CycloneDX SBOM signature
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          expected_identity="https://github.com/${GITHUB_REPOSITORY}/.github/workflows/securepipeline-ci.yml@${GITHUB_REF}"
+
+          cosign verify-blob \
+            "${APP_DIR}/sbom.cdx.json" \
+            --bundle "${APP_DIR}/sbom.sigstore.json" \
+            --certificate-identity="${expected_identity}" \
+            --certificate-oidc-issuer="https://token.actions.githubusercontent.com"
+
+      - name: Upload signed SBOM evidence
+        if: github.event_name == 'push'
+        uses: actions/upload-artifact@v7
+        with:
+          name: securepipeline-sbom-signed-${{ github.sha }}
+          path: |
+            02-securepipeline/sbom.cdx.json
+            02-securepipeline/sbom.sigstore.json
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Log in to GitHub Container Registry
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" \
+            | docker login ghcr.io \
+                -u "${{ github.actor }}" \
+                --password-stdin
+
+      - name: Publish image to GHCR
+        if: github.event_name == 'push'
+        id: publish
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          repository="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/securepipeline"
+          image="${repository}:${GITHUB_SHA}"
+
+          docker tag \
+            "${IMAGE_NAME}:${GITHUB_SHA}" \
+            "${image}"
+
+          docker push "${image}"
+
+          digest="$(
+            docker buildx imagetools inspect "${image}" \
+              | awk '/^Digest:/ {print $2; exit}'
+          )"
+
+          test -n "${digest}"
+
+          echo "Published image: ${image}"
+          echo "Digest: ${digest}"
+          echo "Immutable image: ${repository}@${digest}"
+
+          echo "image_uri=${repository}@${digest}" \
+            >> "${GITHUB_OUTPUT}"
+
+      - name: Sign image with GitHub OIDC
+        if: github.event_name == 'push'
+        env:
+          IMAGE_URI: ${{ steps.publish.outputs.image_uri }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          cosign sign \
+            --yes \
+            "${IMAGE_URI}"
+
+      - name: Verify image signature
+        if: github.event_name == 'push'
+        env:
+          IMAGE_URI: ${{ steps.publish.outputs.image_uri }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          expected_identity="https://github.com/${GITHUB_REPOSITORY}/.github/workflows/securepipeline-ci.yml@${GITHUB_REF}"
+
+          echo "Expected signer:"
+          echo "${expected_identity}"
+
+          cosign verify \
+            "${IMAGE_URI}" \
+            --certificate-identity="${expected_identity}" \
+            --certificate-oidc-issuer="https://token.actions.githubusercontent.com"
+
+      - name: Attest image with CycloneDX SBOM
+        if: github.event_name == 'push'
+        env:
+          IMAGE_URI: ${{ steps.publish.outputs.image_uri }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          cosign attest \
+            --yes \
+            --type cyclonedx \
+            --predicate "${APP_DIR}/sbom.cdx.json" \
+            "${IMAGE_URI}"
+
+      - name: Verify CycloneDX SBOM attestation
+        if: github.event_name == 'push'
+        env:
+          IMAGE_URI: ${{ steps.publish.outputs.image_uri }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          expected_identity="https://github.com/${GITHUB_REPOSITORY}/.github/workflows/securepipeline-ci.yml@${GITHUB_REF}"
+
+          cosign verify-attestation \
+            --type cyclonedx \
+            --certificate-identity="${expected_identity}" \
+            --certificate-oidc-issuer="https://token.actions.githubusercontent.com" \
+            "${IMAGE_URI}"
+
+      - name: Show container logs
+        if: always()
+        run: |
+          docker logs securepipeline-ci \
+            --tail 50 || true
+
+      - name: Stop application
+        if: always()
+        run: |
+          docker stop securepipeline-ci || true

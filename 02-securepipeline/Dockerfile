@@ -8,6 +8,7 @@ WORKDIR /app
 COPY requirements.txt .
 
 RUN python -m pip install --no-cache-dir -r requirements.txt \
+    && python -m pip uninstall --yes pip \
     && groupadd --gid 10001 securepipeline \
     && useradd \
         --uid 10001 \
