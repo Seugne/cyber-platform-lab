@@ -2,7 +2,7 @@
 
 [![SecurePipeline CI](https://github.com/Seugne/cyber-platform-lab/actions/workflows/securepipeline-ci.yml/badge.svg?branch=main)](https://github.com/Seugne/cyber-platform-lab/actions/workflows/securepipeline-ci.yml)
 
-> **DevSecOps software-supply-chain security pipeline — from source code to a hardened Kubernetes runtime.**
+> **DevSecOps software-supply-chain security pipeline: from source code to a hardened Kubernetes runtime.**
 
 SecurePipeline is a hands-on DevSecOps project built around one question:
 
@@ -28,76 +28,36 @@ The result is a reproducible path from a small Flask application to a hardened K
 | Admission control | Kyverno |
 | Git governance | PR + required CI checks on `main` |
 
----
 
 ## The security story
 
 The application begins as source code. Before it is allowed to become a running workload, the pipeline progressively asks:
 
-```text
-Can I trust the source code?
-        ↓
-Can I trust the dependencies?
-        ↓
-Can I trust the final container image?
-        ↓
-Do I know what is inside that image?
-        ↓
-Can I prove which CI identity produced it?
-        ↓
-Can the workload run safely?
-        ↓
-Will Kubernetes reject a non-compliant workload?
-```
+1. Can I trust the source code?
+2. Can I trust the dependencies?
+3. Can I trust the final container image?
+4. Do I know what is inside the image?
+5. Can I prove which CI identity produced it?
+6. Can the workload run safely?
+7. Will Kubernetes reject a non-compliant workload?
 
 The implemented flow is:
 
-```text
-Developer
-   │
-   ▼
-GitHub / Pull Request
-   │
-   ▼
-Gitleaks ─────────────── secrets gate
-   │
-   ▼
-Semgrep ──────────────── SAST gate
-   │
-   ▼
-Trivy filesystem ─────── dependency / SCA gate
-   │
-   ▼
-Docker build
-   │
-   ▼
-Trivy image ──────────── final artifact vulnerability gate
-   │
-   ▼
-CycloneDX SBOM ───────── software inventory
-   │
-   ▼
-Cosign + GHCR ────────── immutable digest + keyless signing
-   │
-   ▼
-CycloneDX attestation ── image ↔ SBOM relationship
-   │
-   ▼
-Kubernetes
-   │
-   ▼
-Kyverno ──────────────── admission control
-   │
-   ▼
-Hardened runtime
-   │
-   ▼
-2 replicas + probes + Service + self-healing
-```
+1. Developer opens a GitHub pull request.
+2. Gitleaks checks the Git history for secrets.
+3. Semgrep performs SAST.
+4. Trivy filesystem scanning checks dependencies.
+5. Docker builds the container image.
+6. Trivy scans the final image.
+7. CycloneDX produces the software inventory.
+8. Cosign and GHCR establish an immutable signed artifact.
+9. A CycloneDX attestation binds the image to its SBOM.
+10. Kubernetes receives the workload.
+11. Kyverno applies admission control.
+12. The application runs with a hardened runtime, two replicas, probes, a Service and self-healing.
 
 ![SecurePipeline full CI success](../screenshots/securepipeline/08-securepipeline-full-ci-success.webp)
 
----
 
 ## Architecture
 
@@ -105,7 +65,6 @@ Hardened runtime
 
 The final architecture diagram will visualize the trust boundaries between GitHub, GitHub Actions, the security gates, GHCR, Sigstore/Cosign and Kubernetes. Until then, the flow above represents the controls that are actually implemented and tested in this repository.
 
----
 
 ## 1. Start with a deliberately small application
 
@@ -129,7 +88,6 @@ and explicitly switches to that user with `USER 10001:10001`. The CI pipeline al
 
 The runtime image also removes `pip` after dependencies are installed because package installation is unnecessary in production. This decision later became important when the final image scan exposed vulnerable components bundled with `pip`.
 
----
 
 ## 2. Make security scanners capable of blocking delivery
 
@@ -138,12 +96,12 @@ The runtime image also removes `pip` after dependencies are installed because pa
 Gitleaks scans the Git history before later stages execute. The intended decision is simple:
 
 ```text
-Secret detected → BLOCK
+Secret detected: BLOCK
 ```
 
 The important design choice is that secret scanning happens before building or publishing artifacts.
 
-### SAST: Semgrep — and the first real failure
+### SAST: Semgrep and the first real failure
 
 I deliberately introduced a controlled vulnerable implementation using `shell=True`:
 
@@ -168,23 +126,14 @@ This was not just a vulnerability test. During the exercise, the first CI config
 
 That changed the lesson from "Semgrep is green" to:
 
-```text
-Vulnerability introduced
-        ↓
-Scanner scope challenged
-        ↓
-False-green condition identified
-        ↓
-Scope corrected
-        ↓
-Finding blocks CI
-        ↓
-Code remediated
-        ↓
-PASS
-```
+1. Vulnerability introduced.
+2. Scanner scope challenged.
+3. False-green condition identified.
+4. Scope corrected.
+5. Finding blocks CI.
+6. Code remediated.
+7. Pipeline passes.
 
----
 
 ## 3. Scan twice: dependencies first, final artifact second
 
@@ -204,25 +153,16 @@ So I removed the unnecessary runtime package, rebuilt the image and rescanned it
 
 This produced a second real engineering cycle:
 
-```text
-Final artifact scan
-        ↓
-HIGH findings
-        ↓
-Root-cause analysis
-        ↓
-Unnecessary runtime component identified
-        ↓
-pip removed
-        ↓
-Image rebuilt
-        ↓
-PASS
-```
+1. Final artifact scan.
+2. HIGH findings detected.
+3. Root-cause analysis.
+4. Unnecessary runtime component identified.
+5. `pip` removed.
+6. Image rebuilt.
+7. Trivy passes.
 
 The practical lesson is that source/dependency scanning and final-artifact scanning are complementary controls.
 
----
 
 ## 4. Move from "green scan" to software inventory
 
@@ -238,7 +178,6 @@ To:
 
 The implemented SBOM uses CycloneDX 1.7 and contained 97 discovered components during the validated run.
 
----
 
 ## 5. Publish by digest and establish provenance
 
@@ -260,7 +199,6 @@ This answers a more useful supply-chain question than "was a signature present?"
 
 > **Which workload identity produced and signed this exact artifact?**
 
----
 
 ## 6. Bind the SBOM to the exact image
 
@@ -268,10 +206,8 @@ Signing an image and signing an SBOM independently is useful, but SecurePipeline
 
 ```text
 Container image digest
-          │
-          │ signed attestation
-          ▼
-     CycloneDX SBOM
+Signed attestation
+CycloneDX SBOM
 ```
 
 The pipeline immediately verifies that attestation.
@@ -280,7 +216,6 @@ The pipeline immediately verifies that attestation.
 
 At this stage, the CI story covers source checks, artifact vulnerability, inventory, artifact identity and provenance.
 
----
 
 ## 7. Cross the next trust boundary: Kubernetes admission
 
@@ -321,17 +256,15 @@ capabilities:
 
 A writable `/tmp` is mounted through `emptyDir`, while the root filesystem stays read-only.
 
----
 
 ## 8. Run the application as a real Kubernetes service
 
 The Deployment maintains two SecurePipeline replicas and defines readiness/liveness probes plus CPU and memory requests/limits.
 
 ```text
-ClusterIP Service :80
-        │
-        ├── Pod 1 → Gunicorn / Flask :8080
-        └── Pod 2 → Gunicorn / Flask :8080
+ClusterIP Service: port 80
+Pod 1: Gunicorn / Flask on port 8080
+Pod 2: Gunicorn / Flask on port 8080
 ```
 
 The Service routes traffic to healthy Pods and Kubernetes service discovery exposes the application internally as:
@@ -346,7 +279,6 @@ The health endpoint returns:
 {"service":"securepipeline","status":"healthy"}
 ```
 
----
 
 ## 9. Destroy a replica on purpose
 
@@ -356,13 +288,10 @@ I deliberately deleted one of the two application Pods. The Deployment controlle
 
 ```text
 Desired replicas = 2
-Actual replicas  = 1
-        ↓
-Deployment reconciliation
-        ↓
-Replacement Pod created
-        ↓
-2 healthy replicas restored
+Actual replicas = 1
+Deployment reconciliation starts
+Replacement Pod is created
+2 healthy replicas are restored
 ```
 
 ![Kubernetes restores the desired replica count](../screenshots/securepipeline/11-kubernetes-self-healing-recovered.webp)
@@ -373,7 +302,6 @@ After recovery, I queried the application again through the Kubernetes Service r
 
 This demonstrates **reconciliation and self-healing**, not merely static YAML deployment.
 
----
 
 ## 10. Protect the trusted Git branch too
 
@@ -388,23 +316,15 @@ The repository now has an active ruleset named **`Protect main - PR + CI`** targ
 
 The delivery model becomes:
 
-```text
-Feature branch
-      ↓
-Pull Request
-      ↓
-SecurePipeline CI
-      ↓
-Application & Container Validation
-      ↓
-PASS required
-      ↓
-Merge into main
-```
+1. Feature branch.
+2. Pull Request.
+3. SecurePipeline CI.
+4. Application & Container Validation.
+5. PASS required.
+6. Merge into `main`.
 
 This means the CI security gates are part of repository governance, not an optional dashboard.
 
----
 
 ## Engineering problems I had to solve
 
@@ -440,7 +360,6 @@ A temporary WSL DNS issue blocked access to GitHub even though the repository an
 
 **Lesson:** separate environment/network faults from code and pipeline faults before remediating.
 
----
 
 ## What is enforced where?
 
@@ -454,12 +373,11 @@ A temporary WSL DNS issue blocked access to GitHub even though the repository an
 | Non-root image runtime | GitHub Actions | wrong runtime identity fails CI |
 | SBOM signature | Cosign / CI | SBOM integrity is verified |
 | Image signature | Cosign / CI | published digest signer identity is verified |
-| SBOM attestation | Cosign / CI | image ↔ SBOM relationship is verified |
+| SBOM attestation | Cosign / CI | image-to-SBOM relationship is verified |
 | Non-root Pod policy | Kyverno admission | non-compliant Pods are denied |
 | Runtime hardening | Kubernetes | hardened security context applied |
 | Branch governance | GitHub ruleset | PR + successful CI required before merge |
 
----
 
 ## Important trust-boundary distinction
 
@@ -476,32 +394,31 @@ Therefore this project **does not claim that Kubernetes currently verifies the C
 Today:
 
 ```text
-Cosign image-signature verification → CI
-Kyverno non-root enforcement       → Kubernetes admission
+Cosign image-signature verification: CI
+Kyverno non-root enforcement: Kubernetes admission
 ```
 
 Keeping that distinction explicit is intentional: this README documents controls that were actually implemented and tested, rather than claiming an integration that is still future work.
 
----
 
 ## Repository structure
 
 ```text
 02-securepipeline/
-├── app/
-│   ├── __init__.py
-│   └── app.py
-├── k8s/
-│   ├── deployment.yaml
-│   ├── namespace.yaml
-│   └── service.yaml
-├── policies/
-│   └── require-nonroot-demo.yaml
-├── security-fixtures/
-│   └── command_runner.py
-├── Dockerfile
-├── requirements.txt
-└── README.md
+  app/
+    __init__.py
+    app.py
+  k8s/
+    deployment.yaml
+    namespace.yaml
+    service.yaml
+  policies/
+    require-nonroot-demo.yaml
+  security-fixtures/
+    command_runner.py
+  Dockerfile
+  requirements.txt
+  README.md
 ```
 
 The repository-level workflow is:
@@ -510,36 +427,27 @@ The repository-level workflow is:
 .github/workflows/securepipeline-ci.yml
 ```
 
----
 
 ## Security decision model
 
 SecurePipeline is built around a decision model rather than a scanner collection:
 
-```text
-Finding
-   ↓
-Severity
-   ↓
-Exploitability / relevance
-   ↓
-Fix available?
-   ↓
-Security policy
-   ↓
-ALLOW / WARN / BLOCK
-```
+1. Identify the finding.
+2. Evaluate severity.
+3. Assess exploitability and relevance.
+4. Check whether a fix is available.
+5. Apply the security policy.
+6. Decide whether to ALLOW, WARN or BLOCK.
 
 Examples demonstrated in this project:
 
 ```text
-Command-injection SAST finding      → BLOCK
-Fixable HIGH final-image findings   → BLOCK
-Root UID/GID at admission           → BLOCK
-Hardened healthy workload           → ALLOW
+Command-injection SAST finding: BLOCK
+Fixable HIGH final-image findings: BLOCK
+Root UID/GID at admission: BLOCK
+Hardened healthy workload: ALLOW
 ```
 
----
 
 ## Current result
 
@@ -548,7 +456,7 @@ SecurePipeline now demonstrates:
 - Gitleaks secret scanning;
 - Semgrep SAST enforcement;
 - Trivy dependency and final-image scanning;
-- real FAIL → FIX → PASS security regressions;
+- real FAIL / FIX / PASS security regressions;
 - hardened non-root Docker runtime;
 - CycloneDX SBOM generation and validation;
 - SBOM signing and verification;
@@ -576,7 +484,6 @@ into:
 "make security decisions and prove that they are enforced"
 ```
 
----
 
 ## Next evolution
 
